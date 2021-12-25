@@ -1,3 +1,10 @@
+# Custom ignores
+.data/
+Misc/
+Results/
+runs_scripts/
+.idea/
+*.sh
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
