@@ -9,7 +9,7 @@ voice = ['voiceless', 'voiced', 'ejective', 'aspirated'] # 18-21
 height = ['open', 'open-mid', 'mid', 'close-mid', 'close'] # 22-26
 backness = ['front', 'back', 'central'] # 27-29
 roundness = ['rounded', 'unrounded'] # 30-31
-length = ['long'] # only for vowels; no occurence means short # 32
+length = ['long'] # only for vowels; no occurence means short vowel # 32
 general_punctuations = [' ', '-', "'", "̇", '.'] # 33-39
 
 phon_features = place + manner + voice + height + backness + roundness + length + general_punctuations
@@ -31,7 +31,7 @@ f2p_dict = {v:k for k,v in p2f_dict.items()}
 kat_alphabet = ['ა', 'ბ', 'გ', 'დ', 'ე', 'ვ', 'ზ', 'თ', 'ი', 'კ', 'ლ', 'მ', 'ნ', 'ო', 'პ', 'ჟ', 'რ', 'ს', 'ტ', 'უ', 'ფ', 'ქ', 'ღ', 'ყ', 'შ', 'ჩ', 'ც', 'ძ', 'წ', 'ჭ', 'ხ', 'ჯ', 'ჰ']
 kat_phonemes = ['ɑ', 'b', 'ɡ', 'd', 'ɛ', 'v', 'z', 'tʰ', 'i', 'kʼ', 'l', 'm', 'n', 'ɔ', 'pʼ', 'ʒ', 'r', 's', 'tʼ', 'u', 'pʰ', 'kʰ', 'ɣ', 'qʼ', 'ʃ', 't͡ʃʰ', 't͡sʰ', 'd͡z', 't͡sʼ', 't͡ʃʼ', 'x', 'd͡ʒ', 'h']
 kat_g2p_dict = dict(zip(kat_alphabet, kat_phonemes))
-kat_components = (kat_g2p_dict, None, None)
+kat_components = [kat_g2p_dict, None, None, None]
 # endregion Georgian - kat
 
 
@@ -41,7 +41,7 @@ swc_phonemes = ['ɑ', 'ɛ', 'i', 'ɔ', 'u',  'ɓ', 't͡ʃ', 'ɗ', 'ð', 'f', 'ɠ
 swc_g2p_dict = dict(zip(swc_alphabet, swc_phonemes))
 def swc_word2phonemes(w:[str]):
     return word2phonemes_with_trigraphs(w, lang='swc')
-swc_components = (swc_g2p_dict, swc_word2phonemes, None)
+swc_components = [swc_g2p_dict, swc_word2phonemes, None, None]
 # endregion Swahili - swc
 
 
@@ -51,7 +51,9 @@ sqi_phonemes = ['a', 'b', 't͡s', 't͡ʃ', 'd', 'ð', 'ɛ', 'ə', 'f', 'ɡ', 'ɟ
 sqi_g2p_dict = dict(zip(sqi_alphabet, sqi_phonemes))
 def sqi_word2phonemes(w:[str]):
     return word2phonemes_with_digraphs(w, lang='sqi')
-sqi_components = (sqi_g2p_dict, sqi_word2phonemes, None)
+def sqi_clean_sample(x: str) -> str:
+    return x.replace("',","") # appears in the data only as part of "për t'u ..." (NFIN)
+sqi_components = [sqi_g2p_dict, sqi_word2phonemes, None, sqi_clean_sample]
 # endregion Albanian - sqi
 
 
@@ -61,8 +63,10 @@ lav_phonemes = ['ɑ', 'ɑː', 'e', 'eː', 'i', 'iː', 'iː', 'o', 'u', 'uː', 'b
 lav_g2p_dict = {**dict(zip(lav_alphabet, lav_phonemes)), **general_punctuations_dict}
 lav_p2g_dict = {**dict(zip(lav_phonemes, lav_alphabet)), **general_punctuations_dict}
 def lav_phonemes2word(phonemes:[str]):
-    return ['ī' if p=='iː' else lav_p2g_dict[p] for p in phonemes] # just never map /iː/ to 'í'
-lav_components = (lav_g2p_dict, None, lav_phonemes2word)
+    return ['ī' if p=='iː' else lav_p2g_dict[p] for p in phonemes] # just never map /iː/ to 'í', it appears only in 3 places.
+def lav_clean_sample(x:str) -> str:
+    return x.replace('í', 'ī')
+lav_components = [lav_g2p_dict, None, lav_phonemes2word, lav_clean_sample]
 # endregion Latvian - lav
 
 
@@ -73,27 +77,32 @@ bul_g2p_dict = {**dict(zip(bul_alphabet, bul_phonemes)), **general_punctuations_
 bul_p2g_dict = {**dict(zip(bul_phonemes, bul_alphabet)), **general_punctuations_dict}
 def bul_phonemes2word(phonemes:[str]):
     return ['й' if p=='j' else bul_p2g_dict[p] for p in phonemes] # just never map /j/ to 'ь' (151 out of 55731)
-bul_components = (bul_g2p_dict, None, bul_phonemes2word)
+bul_components = [bul_g2p_dict, None, bul_phonemes2word, None]
 # endregion Bulgarian - bul
 
 
 # region Hungarian - hun
 hun_alphabet = ['a', 'á', 'b', 'c', 'cs', 'd', 'dz', 'dzs', 'e', 'é', 'f', 'g', 'gy', 'h', 'i', 'í', 'j', 'k', 'l', 'ly', 'm', 'n', 'ny', 'o', 'ó', 'ö', 'ő', 'p', 'r', 's', 'sz', 't', 'ty', 'u', 'ú', 'ü', 'ű', 'v', 'w', 'x', 'y', 'z', 'zs']
-hun_phonemes = ['ɒ', 'aː', 'b', 't͡s', 't͡ʃ', 'd', 'd͡z', 'd͡ʒ', 'ɛ', 'eː', 'f', 'ɡ', 'ɟ', 'h', 'i', 'iː', 'j', 'k', 'l', 'ʎ', 'm', 'n', 'ɲ', 'o', 'oː', 'ø', 'øː', 'p', 'r', 'ʃ', 's', 't', 'c', 'u', 'uː', 'y', 'yː', 'v', 'w', 'k͡s', 'i', 'z', 'ʒ']
+hun_phonemes = ['ɒ', 'aː', 'b', 't͡s', 't͡ʃ', 'd', 'd͡z', 'd͡ʒ', 'ɛ', 'eː', 'f', 'ɡ', 'ɟ', 'h', 'i', 'iː', 'j', 'k', 'l', 'ʎ', 'm', 'n', 'ɲ', 'o', 'oː', 'ø', 'øː', 'p', 'r', 'ʃ', 's', 't', 'c', 'u', 'uː', 'y', 'yː', 'v', 'w', 'ks', 'i', 'z', 'ʒ']
 hun_g2p_dict = {**dict(zip(hun_alphabet, hun_phonemes)), **general_punctuations_dict}
 hun_p2g_dict = {**dict(zip(hun_phonemes, hun_alphabet)), **general_punctuations_dict}
 def hun_word2phonemes(w:[str]):
-    # w = w.replace('|or|', "")
     return word2phonemes_with_trigraphs(w, 'hun')
 def hun_phonemes2word(phonemes:[str]):
     return ['i' if p=='i' else hun_p2g_dict[p] for p in phonemes] # just never map /i/ to 'y'
-hun_components = (hun_g2p_dict, hun_word2phonemes, hun_phonemes2word)
+def hun_clean_sample(x:str) -> str:
+    # the " |or| " is a bug of the scraping from Wiktionary. It can appear at the end of a form
+    # (search in the data for "jósolj|or|") or between 2 forms (search for "jóslok |or| jósolok").
+    # There are also pipes ("|"), alone or preceded by a space " |".
+    x = x.replace(','+','.join(" |or| "), "").replace(", ,|", "").replace(",|", "")
+    return x
+hun_components = [hun_g2p_dict, hun_word2phonemes, hun_phonemes2word, hun_clean_sample]
 # endregion Hungarian - hun
 
 
 # region Turkish - tur
 tur_alphabet = ['a', 'b', 'c', 'ç', 'd', 'e', 'f', 'g', 'ğ', 'h', 'ı', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'ö', 'p', 'r', 's', 'ş', 't', 'u', 'ü', 'v', 'y', 'z', 'w', 'x' , 'â', 'î', 'û']
-tur_phonemes = ['a', 'b', 'd͡ʒ', 't͡ʃ', 'd', 'ɛ', 'f', 'ɡ', 'j', 'h', 'ɯ', 'i', 'ʒ', 'k', 'l', 'm', 'n', 'o', 'œ', 'p', 'ɾ', 's', 'ʃ', 't', 'u', 'y', 'v', 'j', 'z', 'w', 'k͡s', 'aː', 'iː', 'uː']
+tur_phonemes = ['a', 'b', 'd͡ʒ', 't͡ʃ', 'd', 'ɛ', 'f', 'ɡ', 'j', 'h', 'ɯ', 'i', 'ʒ', 'k', 'l', 'm', 'n', 'o', 'œ', 'p', 'ɾ', 's', 'ʃ', 't', 'u', 'y', 'v', 'j', 'z', 'w', 'ks', 'aː', 'iː', 'uː']
 tur_g2p_dict = {**dict(zip(tur_alphabet, tur_phonemes)), **general_punctuations_dict}
 tur_p2g_dict = {**dict(zip(tur_phonemes, tur_alphabet)), **general_punctuations_dict}
 def lengthen_last_vowel_phoneme(phonemes_list):
@@ -144,7 +153,7 @@ def tur_phonemes2word(phonemes:[str]): # in ambiguitive situations, the major vo
             g = tur_p2g_dict[p]
         graphemes.extend(g if type(g)==list else [g])
     return graphemes
-tur_components = (tur_g2p_dict, tur_word2phonemes, tur_phonemes2word)
+tur_components = [tur_g2p_dict, tur_word2phonemes, tur_phonemes2word, None]
 # endregion Turkish - tur
 
 
@@ -152,7 +161,7 @@ tur_components = (tur_g2p_dict, tur_word2phonemes, tur_phonemes2word)
 fin_alphabet = ['a', 'è', 'é', 'e', 'i', 'o', 'u', 'y', 'ä', 'ö', 'b', 'c', 'd', 'f', 'g', 'ng', 'nk', 'h', 'j', 'k', 'l', 'm', 'n',
                 'p', 'q', 'r', 's', 'š', 't', 'v', 'w', 'x', 'z', 'ž', 'å', 'aa', 'ee', 'ii', 'oo', 'uu', 'yy', 'ää', 'öö']
 fin_phonemes = ['ɑ', 'e', 'e', 'e', 'i', 'o', 'u', 'y', 'a', 'ø', 'b', 's', 'd', 'f', 'ɡ', 'ŋŋ', 'ŋ', 'h', 'j', 'k', 'l', 'm', 'n',
-                'p', 'k', 'r', 's', 'ʃ', 't', 'v', 'v', 'k͡s', 't͡s', 'ʒ', 'oː', 'ɑː', 'eː', 'iː', 'oː', 'uː', 'yː', 'aː', 'øː']
+                'p', 'k', 'r', 's', 'ʃ', 't', 'v', 'v', 'ks', 't͡s', 'ʒ', 'oː', 'ɑː', 'eː', 'iː', 'oː', 'uː', 'yː', 'aː', 'øː']
 fin_g2p_dict = {**dict(zip(fin_alphabet, fin_phonemes)), **general_punctuations_dict}
 fin_p2g_dict = {**dict(zip(fin_phonemes, fin_alphabet)), **general_punctuations_dict}
 def fin_word2phonemes(w:[str]):
@@ -178,15 +187,20 @@ def fin_phonemes2word(phonemes:[str]):
         graphemes.extend(g if type(g)==list else [g])
     return graphemes
 
-fin_components = (fin_g2p_dict, fin_word2phonemes, fin_phonemes2word)
+fin_components = [fin_g2p_dict, fin_word2phonemes, fin_phonemes2word, None]
 # endregion Finnish - fin
 
+# if you wish to support a new language, and a grapheme is mapped to more than a single phoneme
+# (e.g. 'x' -> /ks/), make sure list(grapheme) results in real phonemes
 
 # endregion definedLangs
 
 langs_properties = {'kat': kat_components, 'tur': tur_components, 'swc': swc_components,
                     'sqi': sqi_components, 'bul': bul_components,
-                    'hun': hun_components, 'lav': lav_components, 'fin': fin_components,}
+                    'hun': hun_components, 'lav': lav_components, 'fin': fin_components}
+for k in langs_properties:
+    if langs_properties[k][3] is None:
+        langs_properties[k][3] = lambda x: x
 
 def word2phonemes_with_digraphs(w:[str], lang:str):
     # break the word to graphemes given some digraphs and convert to a list of phonemes
@@ -225,7 +239,6 @@ def word2phonemes_with_trigraphs(w:[str], lang:str):
 
 def is_g2p_1to1(d:dict): return len(d.values())==len(set(d.values()))
 def are_there_unincluded_phonemes(lang_phonemes:[str]) -> [str]: return [p for p in lang_phonemes if p not in p2f_dict.keys()]
-
 
 # region manually inserting g-p pairs
 # (copy that section to the console and insert; once done, copy back to the script.

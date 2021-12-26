@@ -9,8 +9,8 @@ from copy import deepcopy
 from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
 from analogies_phonology_preprocessing import combined_phonology_processor, GenericPhonologyProcessing
-from hyper_params_config import SEED, inp_phon_type, out_phon_type, device_idx, log_file
-from languages_setup import MAX_FEAT_SIZE
+from hyper_params_config import SEED, inp_phon_type, out_phon_type, device_idx, log_file, lang
+from languages_setup import MAX_FEAT_SIZE, langs_properties
 
 device = torch.device(f"cuda:{device_idx}" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(SEED)
@@ -26,6 +26,7 @@ trg_tokenizer = lambda x: x.split(',')
 # Also, supply some preproc to g-g reinflection (the standard variation), to maintain consistency (see the first code lines).
 def phon_extended_src_preprocess(x: [str]) -> [str]:
     # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
+    x = langs_properties[lang][3](','.join(x)).split(',')
     if inp_phon_type=='graphemes':
         return x # do nothing
     else:
@@ -34,6 +35,7 @@ def phon_extended_src_preprocess(x: [str]) -> [str]:
 
 def phon_extended_trg_preprocess(x: [str]) -> [str]:
     # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
+    x = langs_properties[lang][3](','.join(x)).split(',')
     if out_phon_type=='graphemes':
         return x # do nothing
     else:
