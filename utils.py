@@ -8,7 +8,7 @@ from copy import deepcopy
 
 from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
-from analogies_phonology_preprocessing import combined, GenericPhonologyProcessing
+from analogies_phonology_preprocessing import combined_phonology_processor, GenericPhonologyProcessing
 from hyper_params_config import SEED, inp_phon_type, out_phon_type, device_idx, log_file
 from languages_setup import MAX_FEAT_SIZE
 
@@ -56,7 +56,7 @@ def phon_extended_src_preprocess(x: [str]) -> [str]:
     if inp_phon_type=='graphemes':
         return x # do nothing
     else:
-        new_x, _ = combined.line2phon_line_generic(','.join(x), '', convert_trg=False)
+        new_x, _ = combined_phonology_processor.line2phon_line_generic(','.join(x), '', convert_trg=False)
         return new_x
 
 def phon_extended_trg_preprocess(x: [str]) -> [str]:
@@ -64,7 +64,7 @@ def phon_extended_trg_preprocess(x: [str]) -> [str]:
     if out_phon_type=='graphemes':
         return x # do nothing
     else:
-        _, new_x = combined.line2phon_line_generic('', ','.join(x), convert_src=False)
+        _, new_x = combined_phonology_processor.line2phon_line_generic('', ','.join(x), convert_src=False)
         return new_x
 
 preprocess_methods_extended = {'src': phon_extended_src_preprocess, 'trg': phon_extended_trg_preprocess}

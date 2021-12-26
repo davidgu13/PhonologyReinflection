@@ -8,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter  # to print to tensorboard
 from torchtext.legacy.data import BucketIterator, TabularDataset
 from network import Encoder, Decoder, Seq2Seq
 import os
-from analogies_phonology_preprocessing import combined
+from analogies_phonology_preprocessing import combined_phonology_processor
 # Definition of tokenizers, Fields and device were moved to utils
 import time
 from datetime import timedelta
@@ -143,7 +143,7 @@ def main():
 
             # Convert non-graphemic formats to words
             if inp_phon_type!='graphemes' or out_phon_type!='graphemes':
-                src_morph, trg_morph, pred_morph = combined.phon_elements2morph_elements_generic(src, trg, pred)
+                src_morph, trg_morph, pred_morph = combined_phonology_processor.phon_elements2morph_elements_generic(src, trg, pred)
                 if out_phon_type!='graphemes': # another evaluation metric is needed; the source format is irrelevant
                     morph_ed_print = utils.editDistance(trg_morph, pred_morph)
                     printF(f"{i}. input_morph: {src_morph} ; gold_morph: {trg_morph} ; pred_morph: {pred_morph} ; morphlvl_ED = {morph_ed_print}\n")
@@ -152,7 +152,7 @@ def main():
 
 
         if PHON_REEVALUATE:
-            ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, converter=combined, output_file=preds_file)
+            ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, converter=combined_phonology_processor, output_file=preds_file)
             writer.add_scalar("Dev set Phon-Accuracy", accuracy_phon, global_step=epoch)
             extra_str = f"; avgED_phon = {ED_phon}; avgAcc_phon = {accuracy_phon}"
             accs_phon.append(accuracy_phon)
@@ -189,7 +189,7 @@ def main():
     load_checkpoint(torch.load(ckpt_path), model, optimizer)
     printF("Applying model on validation set")
     if PHON_REEVALUATE:
-        ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, converter=combined, output_file=preds_file)
+        ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, converter=combined_phonology_processor, output_file=preds_file)
         assert [ED_phon, accuracy_phon, ED_morph, accuracy_morph] == best_measures[:-1] # sanity check
         printF(f"Phonological level: ED score on dev set is {ED_phon}. Avg-Accuracy is {accuracy_phon}.")
     else:

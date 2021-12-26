@@ -105,7 +105,7 @@ class GenericPhonologyProcessing(Data2SamplesConverter):
     # Do not implement a method for writing the processed data to files! Make sure to only use it at the preprocessing part!
 
 
-combined = GenericPhonologyProcessing(langPhonology)
+combined_phonology_processor = GenericPhonologyProcessing(langPhonology)
 
 if __name__ == '__main__':
     old_dir = os.path.join(".data","AnalogiesData","src1_cross1")
@@ -114,4 +114,4 @@ if __name__ == '__main__':
     lines = open(fn,encoding='utf8').readlines()
     for l in lines:
         src, trg = l.strip().split('\t')
-        new_src, new_trg = combined.line2phon_line_generic(src,trg)
+        new_src, new_trg = combined_phonology_processor.line2phon_line_generic(src, trg)
