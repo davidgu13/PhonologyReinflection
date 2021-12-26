@@ -106,9 +106,12 @@ def twoWay_conversion(w):
     feats = [f.split(',') for f in ','.join(feats).split(',$,')]
     print(f"f2word: {langPhonology.phonemes2word(feats,mode='features')}")
 
-# Note: Comment the first line in debug mode, or the second one otherwise.
-# from hyper_params_config import PHON_USE_ATTENTION, lang
-PHON_USE_ATTENTION, lang = True, 'tur'
+# Change this to True only when debugging the g2p/p2g conversions!
+debugging_mode = True
+if debugging_mode:
+    PHON_USE_ATTENTION, lang = True, 'tur'
+else:
+    from hyper_params_config import PHON_USE_ATTENTION, lang
 
 MAX_FEAT_SIZE = max([len(p2f_dict[p]) for p in langs_properties[lang][0].values()])
 langPhonology = LanguageSetup(lang, langs_properties[lang][0], langs_properties[lang][1], langs_properties[lang][2])

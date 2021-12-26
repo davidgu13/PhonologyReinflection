@@ -10,7 +10,7 @@ height = ['open', 'open-mid', 'mid', 'close-mid', 'close'] # 22-26
 backness = ['front', 'back', 'central'] # 27-29
 roundness = ['rounded', 'unrounded'] # 30-31
 length = ['long'] # only for vowels; no occurence means short # 32
-general_punctuations = [' ', '-', '|', "'", "̇", ":", '.'] # 33-39
+general_punctuations = [' ', '-', "'", "̇", '.'] # 33-39
 
 phon_features = place + manner + voice + height + backness + roundness + length + general_punctuations
 idx2feature = dict(enumerate(phon_features))
