@@ -49,16 +49,9 @@ def postprocessBatch(src:torch.Tensor, offsets):
     new_emb = torch_scatter.segment_mean_coo(src, final_offsets)
     return new_emb
 
-
-# def pad_to_maxfeats(spl:[[str]], maxLen=MAX_FEAT_SIZE):
-#     l = [e.split(',') for e in spl]
-#     l = [e+['NA']*(maxLen-len(e)) for e in l]
-#     spl = l
-#     return spl
-
 # Implement here extended preproc methods that convert the data to the formats required at inp_phon_type and out_phon_type.
 # Also, supply some preproc to g-g reinflection (the standard variation), to maintain consistency (see the first code lines).
-def phon_ext_src_preproc(x: [str]) -> [str]:
+def phon_extended_src_preprocess(x: [str]) -> [str]:
     # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
     if inp_phon_type=='graphemes':
         return x # do nothing
@@ -66,7 +59,7 @@ def phon_ext_src_preproc(x: [str]) -> [str]:
         new_x, _ = combined.line2phon_line_generic(','.join(x), '', convert_trg=False)
         return new_x
 
-def phon_ext_trg_preproc(x: [str]) -> [str]:
+def phon_extended_trg_preprocess(x: [str]) -> [str]:
     # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
     if out_phon_type=='graphemes':
         return x # do nothing
@@ -74,9 +67,9 @@ def phon_ext_trg_preproc(x: [str]) -> [str]:
         _, new_x = combined.line2phon_line_generic('', ','.join(x), convert_src=False)
         return new_x
 
-preproc_func_ext = {'src':phon_ext_src_preproc, 'trg':phon_ext_trg_preproc}
-srcField = Field(tokenize=src_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=preproc_func_ext['src'])
-trgField = Field(tokenize=trg_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=preproc_func_ext['trg'])
+preprocess_methods_extended = {'src': phon_extended_src_preprocess, 'trg': phon_extended_trg_preprocess}
+srcField = Field(tokenize=src_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=preprocess_methods_extended['src'])
+trgField = Field(tokenize=trg_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=preprocess_methods_extended['trg'])
 
 
 def translate_sentence(model, sentence, german, english, device, max_length=50, return_attn=False):
