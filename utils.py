@@ -2,7 +2,7 @@
 from os.path import join
 import numpy as np
 import torch
-import torch_scatter # super important! The link I used for installing it is https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html#quick-start
+import torch_scatter # super important! The link I used for installing it: https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html#quick-start
 from torchtext.legacy.data import Field
 from copy import deepcopy
 
@@ -15,16 +15,34 @@ from languages_setup import MAX_FEAT_SIZE
 device = torch.device(f"cuda:{device_idx}" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(SEED)
 
-src_tokenizer = lambda x: x.split(',')
-trg_tokenizer = lambda x: x.split(',')
-
-# The acrtual Fields are defined below
-# german = Field(tokenize=tokenize_ger, lower=True, init_token="<sos>", eos_token="<eos>")
-# english = Field(tokenize=tokenize_eng, lower=True, init_token="<sos>", eos_token="<eos>")
-
 def printF(s:str, fn=log_file):
     print(s)
     open(fn, 'a+', encoding='utf8').write(s + '\n')
+
+src_tokenizer = lambda x: x.split(',')
+trg_tokenizer = lambda x: x.split(',')
+
+# Implement here extended preproc methods that convert the data to the formats required at inp_phon_type and out_phon_type.
+# Also, supply some preproc to g-g reinflection (the standard variation), to maintain consistency (see the first code lines).
+def phon_extended_src_preprocess(x: [str]) -> [str]:
+    # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
+    if inp_phon_type=='graphemes':
+        return x # do nothing
+    else:
+        new_x, _ = combined_phonology_processor.line2phon_line_generic(','.join(x), '', convert_trg=False)
+        return new_x
+
+def phon_extended_trg_preprocess(x: [str]) -> [str]:
+    # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
+    if out_phon_type=='graphemes':
+        return x # do nothing
+    else:
+        _, new_x = combined_phonology_processor.line2phon_line_generic('', ','.join(x), convert_src=False)
+        return new_x
+
+preprocess_methods_extended = {'src': phon_extended_src_preprocess, 'trg': phon_extended_trg_preprocess}
+srcField = Field(tokenize=src_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=preprocess_methods_extended['src'])
+trgField = Field(tokenize=trg_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=preprocess_methods_extended['trg'])
 
 
 def get_abs_offsets(x: torch.Tensor, phon_delim, phon_max_len=MAX_FEAT_SIZE):
@@ -48,28 +66,6 @@ def postprocessBatch(src:torch.Tensor, offsets):
     final_offsets = torch.repeat_interleave(torch.arange(new_len, device=device), repeats)
     new_emb = torch_scatter.segment_mean_coo(src, final_offsets)
     return new_emb
-
-# Implement here extended preproc methods that convert the data to the formats required at inp_phon_type and out_phon_type.
-# Also, supply some preproc to g-g reinflection (the standard variation), to maintain consistency (see the first code lines).
-def phon_extended_src_preprocess(x: [str]) -> [str]:
-    # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
-    if inp_phon_type=='graphemes':
-        return x # do nothing
-    else:
-        new_x, _ = combined_phonology_processor.line2phon_line_generic(','.join(x), '', convert_trg=False)
-        return new_x
-
-def phon_extended_trg_preprocess(x: [str]) -> [str]:
-    # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
-    if out_phon_type=='graphemes':
-        return x # do nothing
-    else:
-        _, new_x = combined_phonology_processor.line2phon_line_generic('', ','.join(x), convert_src=False)
-        return new_x
-
-preprocess_methods_extended = {'src': phon_extended_src_preprocess, 'trg': phon_extended_trg_preprocess}
-srcField = Field(tokenize=src_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=preprocess_methods_extended['src'])
-trgField = Field(tokenize=trg_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=preprocess_methods_extended['trg'])
 
 
 def translate_sentence(model, sentence, german, english, device, max_length=50, return_attn=False):
