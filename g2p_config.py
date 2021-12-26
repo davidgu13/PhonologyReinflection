@@ -182,47 +182,10 @@ fin_components = (fin_g2p_dict, fin_word2phonemes, fin_phonemes2word)
 # endregion Finnish - fin
 
 
-# region Armenian - hye
-# Not finished! Didn't add this lang bc it has too many exceptions for 'ե', 'ո', 'ու' and 'և'. Also there are ligatures. That's just too complex.
-# hye_alphabet = ['ա', 'բ', 'գ', 'դ', 'ե', 'զ', 'է', 'ը', 'թ', 'ժ', 'ի', 'լ', 'խ', 'ծ', 'կ', 'հ', 'ձ', 'ղ', 'ճ', 'մ', 'յ', 'ն', 'շ', 'ո', 'չ', 'պ', 'ջ', 'ռ', 'ս', 'վ', 'տ', 'ր', 'ց', 'ու', 'փ', 'ք', 'և', 'օ', 'ֆ']
-# hye_phonemes = ['ɑ', 'b', 'ɡ', 'd', 'ɛ', 'z', 'ɛ', 'ə', 'tʰ', 'ʒ', 'i', 'l', 'χ', 't͡s', 'k', 'h', 'd͡z', 'ʁ', 't͡ʃ', 'm', 'j', 'n', 'ʃ', 'ɔ', 't͡ʃʰ', 'p', 'd͡ʒ', 'r', 's', 'v', 't', 'ɾ', 't͡sʰ', 'u', 'pʰ', 'kʰ', 'ɛ͡v', 'o', 'f']
-# hye_g2p_dict = dict(zip(hye_alphabet, hye_phonemes))
-# def hye_word2phonemes(w:[str]):
-#     special_e_words_g = ['եմ', 'ես', 'ենք', 'եք', 'են'] # [['ե', 'մ'], ['ե', 'ս'], ['ե', 'ն', 'ք'], ['ե', 'ք'], ['ե', 'ն']]
-#     special_e_words_p = [['ɛ', 'm'], ['ɛ', 's'], ['ɛ', 'n', 'kʰ'], ['ɛ', 'kʰ'], ['ɛ', 'n']]
-#     p, phonemes = '', []
-#     for i,g in enumerate(w):
-#         if g == 'ե' and i==0:
-#             if ''.join(w) in special_e_words_g:
-#                 p = 'ɛ'
-#             else:
-#                 p = ['j', 'ɛ']
-#         elif g == 'ո' and i==0: p = ['v', 'ɔ']
-#         elif g == 'և' and i==0: p = ['j', 'ɛ', 'v']
-#         else:
-#             p = hye_g2p_dict[g]
-#         phonemes.extend(p if type(p)==list else [p])
-#     return phonemes
-# # Not finished!
-# def hye_phonemes2word(phonemes:[str]):
-#     graphemes = []
-#     for p in phonemes:
-#         if p == 'ɛ':
-#             g = 'ե' # ignore 'է'
-#         # elif True:
-#         #     pass
-#         else:
-#             g = tur_p2g_dict[p]
-#         graphemes.extend(g if type(g)==list else [g])
-#     return graphemes
-# hye_components = (hye_g2p_dict, hye_word2phonemes, hye_phonemes2word)
-# endregion Armenian - hye
-
-
-# # endregion definedLangs
+# endregion definedLangs
 
 langs_properties = {'kat': kat_components, 'tur': tur_components, 'swc': swc_components,
-                    'sqi': sqi_components, 'bul': bul_components, # 'hye': hye_components,
+                    'sqi': sqi_components, 'bul': bul_components,
                     'hun': hun_components, 'lav': lav_components, 'fin': fin_components,}
 
 def word2phonemes_with_digraphs(w:[str], lang:str):

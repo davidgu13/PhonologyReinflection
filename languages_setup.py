@@ -118,5 +118,5 @@ langPhonology = LanguageSetup(lang, langs_properties[lang][0], langs_properties[
 
 if __name__ == '__main__':
     words4example = {'kat': 'მჭირდებოდნენ', 'swc': 'magongjwa', 'sqi': 'rije', 'hun': 'hűdályokról', 'bul': 'най-ясното',
-                     'lav': 'abstrahēšana', 'fin': 'ilmaatyynyissä', 'tur': 'yığmalılar mıymış' } #, 'hye': 'եվրոպիումովդ'}
+                     'lav': 'abstrahēšana', 'fin': 'ilmaatyynyissä', 'tur': 'yığmalılar mıymış' }
     twoWay_conversion(words4example[lang])
