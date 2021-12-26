@@ -260,14 +260,6 @@
       "affricate",
       "ejective"
     ],
-    "\u0283t": [
-      "post-alveolar",
-      "fricative",
-      "voiceless",
-      "alveolar",
-      "plosive",
-      "voiceless"
-    ],
     "\u0272": [
       "palatal",
       "nasal",
@@ -293,21 +285,6 @@
       "approximant",
       "voiced"
     ],
-    "ju": [
-      "palatal",
-      "approximant",
-      "voiced",
-      "close",
-      "back",
-      "rounded"
-    ],
-    "ja": [
-      "palatal",
-      "approximant",
-      "voiced",
-      "open",
-      "front"
-    ],
     "\u028e": [
       "palatal",
       "lateral",
@@ -319,14 +296,6 @@
       "voiced"
     ],
     "\u014b": [
-      "velar",
-      "nasal",
-      "voiced"
-    ],
-    "\u014b\u014b": [
-      "velar",
-      "nasal",
-      "voiced",
       "velar",
       "nasal",
       "voiced"
@@ -383,22 +352,6 @@
     ],
     "h": [
       "glottal",
-      "fricative",
-      "voiceless"
-    ],
-    "\u025b\u0361v": [
-      "open-mid",
-      "front",
-      "unrounded",
-      "labial",
-      "fricative",
-      "voiced"
-    ],
-    "k\u0361s": [
-      "velar",
-      "plosive",
-      "voiceless",
-      "alveolar",
       "fricative",
       "voiceless"
     ]
