@@ -1,6 +1,5 @@
 from itertools import chain
 from g2p_config import idx2feature, feature2idx, p2f_dict, f2p_dict, langs_properties, general_punctuations
-from functools import partial
 
 def joinit(iterable, delimiter):
     # Inserts delimiters between elements of some iterable object.
@@ -26,8 +25,8 @@ class LanguageSetup:
         self._graphemes2phonemes.update(dict(zip(general_punctuations, general_punctuations)))
         self._phonemes2graphemes = {v:k for k, v in self._graphemes2phonemes.items()} # _graphemes2phonemes.reverse
 
-        self._alphabet = self._graphemes2phonemes.keys() # the graphemes of the language
-        self._phonemes = self._graphemes2phonemes.values()
+        self._alphabet = list(self._graphemes2phonemes.keys()) # the graphemes of the language
+        self._phonemes = list(self._graphemes2phonemes.values())
 
         self._manual_word2phonemes = manual_word2phonemes
         self._manual_phonemes2word = manual_phonemes2word
@@ -96,34 +95,34 @@ class LanguageSetup:
                 graphemes.append(g)
         return ''.join(graphemes)
 
-def twoWay_conversion(w):
+def two_way_conversion(w):
     print(f"w = {w}")
     ps = langPhonology.word2phonemes(w, mode='phonemes')
     feats = langPhonology.word2phonemes(w, mode='features')
     print(f"phonemes = {ps}")
     print(f"features = {feats}")
-    print(f"p2word: {langPhonology.phonemes2word(ps, mode='phonemes')}")
+    p2word = langPhonology.phonemes2word(ps, mode='phonemes')
+    print(f"p2word: {p2word}")
+    print(f"ED(w, p2word) = {editDistance(w, p2word)}")
+
     feats = [f.split(',') for f in ','.join(feats).split(',$,')]
-    w_reconstructed = langPhonology.phonemes2word(feats, mode='features')
-    print(f"f2word: {w_reconstructed}")
-    print(f"ED(w, f2word) = {editDistance(w, w_reconstructed)}")
+    f2word = langPhonology.phonemes2word(feats, mode='features')
+    print(f"f2word: {f2word}")
+    print(f"ED(w, f2word) = {editDistance(w, f2word)}")
 
 # Change this to True only when debugging the g2p/p2g conversions!
 debugging_mode = True
 if debugging_mode:
-    PHON_USE_ATTENTION, lang = True, 'kat'
+    PHON_USE_ATTENTION, lang = True, 'bul'
 else:
     from hyper_params_config import PHON_USE_ATTENTION, lang
 
 
-MAX_FEAT_SIZE = max([len(p2f_dict[p]) for p in langs_properties[lang][0].values()])
+MAX_FEAT_SIZE = max([len(p2f_dict[p]) for p in langs_properties[lang][0].values() if p in p2f_dict]) # only composite phonemes don't appear in that list
 langPhonology = LanguageSetup(lang, langs_properties[lang][0], langs_properties[lang][1], langs_properties[lang][2])
 
-# d = dict(zip(alphabet, phonemes))
-# phon_d = dict(zip(phonemes, alphabet))
-#
-# # w = list('найяснюотщööо') # bul
-# # w = list('eéfdzgycsklynndzso') # hun
+# w = list('найяснюотщööо') # bul
+# w = list('eéfdzgycsklynndzso') # hun
 # w = list('bщvnmngodzsnkoxeööj')
 # print(f"w = {w}")
 # ps = word2phonemes_with_digraphs(w, d, single_phonemes)
@@ -146,11 +145,12 @@ def editDistance(str1, str2):
                 dg = 1
             table[i][j] = min(table[i - 1][j] + 1, table[i][j - 1] + 1, table[i - 1][j - 1] + dg)
     return int(table[len(str2)][len(str1)])
-# print(f"ED = {editDistance(w,w2)
-
 
 
 if __name__ == '__main__':
-    example_words = {'kat': 'მჭირდებოდნენ', 'swc': 'magongjwa', 'sqi': 'rije rrçlldijdhegnj', 'hun': 'hűdályokról', 'bul': 'най-ясното',
-                     'lav': 'abstrahēšana', 'fin': 'ilmaatyynyissä', 'tur': 'yığmalılar mıymış'}
-    twoWay_conversion(example_words[lang])
+    # made-up words to test the correctness of the g2p/p2g conversions algorithms:
+    example_words = {'bul': 'най-ясюногщжто', 'fin': 'ilmaatyynyissä',
+                     'hun': 'hűdályokról', 'kat': 'არ მჭირდებოდყეტ',
+                     'lav': 'abscātraķkdzhēļšanģa', 'sqi': 'rdhëije rrçlldgjijdhegnjzh',
+                     'swc': "magnchdheongjwng'a", 'tur': 'yığmalılar mıymış'}
+    two_way_conversion(example_words[lang])

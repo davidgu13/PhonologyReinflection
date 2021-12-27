@@ -76,10 +76,16 @@ bul_alphabet = ['а', 'б', 'в', 'г', 'д', 'е', 'ж', 'з', 'и', 'й', 'к'
 bul_phonemes = ['a', 'b', 'v', 'ɡ', 'd', 'ɛ', 'ʒ', 'z', 'i', 'j', 'k', 'l', 'm', 'n', 'ɔ', 'p', 'r', 's', 't', 'u', 'f', 'x', 't͡s', 't͡ʃ', 'ʃ', 'ʃt', 'ɤ', 'j', 'ju', 'ja']
 bul_g2p_dict = {**dict(zip(bul_alphabet, bul_phonemes)), **general_punctuations_dict}
 bul_p2g_dict = {**dict(zip(bul_phonemes, bul_alphabet)), **general_punctuations_dict}
+def bul_word2phonemes(w:[str]):
+    phonemes = []
+    for g in w:
+        target_phoneme = [*bul_g2p_dict[g]] if g in {'щ', 'ю', 'я'} else bul_g2p_dict[g]
+        phonemes.extend(target_phoneme if type(target_phoneme)==list else [target_phoneme])
+    return phonemes
 def bul_phonemes2word(phonemes:[str]):
     special_mappings = {'j': 'й'} # just never map /j/ to 'ь' ('ь' - 151 vs 'й' - 7217)
     return phonemes2graphemes_with_doubles(phonemes, lang='bul', special_mappings=special_mappings)
-bul_components = [bul_g2p_dict, None, bul_phonemes2word, None]
+bul_components = [bul_g2p_dict, bul_word2phonemes, bul_phonemes2word, None]
 # endregion Bulgarian - bul
 
 
@@ -117,34 +123,7 @@ turkish_vowels_phonemes = set([tur_g2p_dict[g] for g in turkish_vowels])
 def is_tur_vowel(c): return c in turkish_vowels
 def is_tur_vowel_phoneme(c): return c in turkish_vowels_phonemes
 
-def tur_word2phonemes(w:[str]):
-    # DEPRACATED!
-    # w = ''.join(w)
-    w = w.casefold() # lowercasing
-    graphemes, phonemes, i = list(w), [], 0
-    while i < len(w):
-        c, resulted_phoneme = graphemes[i], ''
-        if c=='ğ':
-            # assert graphemes[i - 1] in turkish_vowels # must obey the regex [aeiouıöüâîû]ğ
-            if i==len(w)-1 or graphemes[i+1]==' ': # last letter before whitespace
-                phonemes = lengthen_last_item(phonemes)
-            else:
-                trigraph = graphemes[i - 1: i + 2]
-                if trigraph[0]==trigraph[2]:
-                    # assert trigraph[0] not in {'â', 'î', 'û'} # because they're already long vowels!
-                    phonemes = lengthen_last_item(phonemes)
-                    i+=1
-                elif feature_in_letter('front', tur_g2p_dict, trigraph[0]): # follows a front vowel # להוסיף שצריך להיות אחרי e
-                    resulted_phoneme= 'j'
-                # otherwise just ignore the 'ğ'
-        else:
-            resulted_phoneme = tur_g2p_dict[c]
-        if resulted_phoneme!='':
-            phonemes.append(resulted_phoneme)
-        i+=1
-    return phonemes
-
-def tur_word2phonemes2(graphemes:[str]):
+def tur_word2phonemes(graphemes:[str]):
     # Turkish has no digraphs, but the conversion of 'ğ' is a little complex, so we don't use word2phonemes_with_digraphs
     graphemes = list(''.join(graphemes).casefold()) # lowercasing
     phonemes, i = [], 0
@@ -189,7 +168,7 @@ def tur_phonemes2word(phonemes:[str]):
         graphemes.extend(g if type(g)==list else [g])
         i += 1
     return graphemes
-tur_components = [tur_g2p_dict, tur_word2phonemes2, tur_phonemes2word, None]
+tur_components = [tur_g2p_dict, tur_word2phonemes, tur_phonemes2word, None]
 # endregion Turkish - tur
 
 
