@@ -24,9 +24,10 @@ p2f_vowels.update({ k+'ː': v+('long',) for k,v in p2f_vowels.items()}) # accoun
 general_punctuations_dict = dict(zip(general_punctuations, general_punctuations))
 p2f_dict = {**p2f_vowels, **p2f_consonants, **general_punctuations_dict}
 f2p_dict = {v:k for k,v in p2f_dict.items()}
-
+allowed_phoneme_tokens = tuple(p2f_dict.keys())
 
 # region definedLangs
+# The structure of lang_components: [lang_g2p_dict, manual_word2phonemes, manual_phonemes2word, lang_clean_sample] - the last is a method for cleaning a line sample
 # region Georgian - kat
 kat_alphabet = ['ა', 'ბ', 'გ', 'დ', 'ე', 'ვ', 'ზ', 'თ', 'ი', 'კ', 'ლ', 'მ', 'ნ', 'ო', 'პ', 'ჟ', 'რ', 'ს', 'ტ', 'უ', 'ფ', 'ქ', 'ღ', 'ყ', 'შ', 'ჩ', 'ც', 'ძ', 'წ', 'ჭ', 'ხ', 'ჯ', 'ჰ']
 kat_phonemes = ['ɑ', 'b', 'ɡ', 'd', 'ɛ', 'v', 'z', 'tʰ', 'i', 'kʼ', 'l', 'm', 'n', 'ɔ', 'pʼ', 'ʒ', 'r', 's', 'tʼ', 'u', 'pʰ', 'kʰ', 'ɣ', 'qʼ', 'ʃ', 't͡ʃʰ', 't͡sʰ', 'd͡z', 't͡sʼ', 't͡ʃʼ', 'x', 'd͡ʒ', 'h']
@@ -58,14 +59,14 @@ sqi_components = [sqi_g2p_dict, sqi_word2phonemes, None, sqi_clean_sample]
 
 
 # region Latvian - lav
-lav_alphabet = ['a', 'ā', 'e',  'ē', 'i',  'ī', 'í', 'o', 'u',  'ū', 'b',  'c',  'č', 'd', 'dz', 'dž', 'f', 'g', 'ģ', 'h', 'j', 'k', 'ķ', 'l', 'ļ', 'm', 'n', 'ņ', 'p', 'r', 's', 'š', 't', 'v', 'z', 'ž']
-lav_phonemes = ['ɑ', 'ɑː', 'e', 'eː', 'i', 'iː', 'iː', 'o', 'u', 'uː', 'b', 't̪͡s̪', 't͡ʃ', 'd̪', 'd̪͡z̪', 'd͡ʒ', 'f', 'ɡ', 'ɟ', 'x', 'j', 'k', 'c', 'l', 'ʎ', 'm', 'ŋ', 'ɲ', 'p', 'r', 's', 'ʃ', 't̪', 'v', 'z', 'ʒ']
+lav_alphabet = ['a', 'ā', 'e',  'ē', 'i',  'ī', 'o', 'u',  'ū', 'b',  'c',  'č', 'd', 'dz', 'dž', 'f', 'g', 'ģ', 'h', 'j', 'k', 'ķ', 'l', 'ļ', 'm', 'n', 'ņ', 'p', 'r', 's', 'š', 't', 'v', 'z', 'ž']
+lav_phonemes = ['ɑ', 'ɑː', 'e', 'eː', 'i', 'iː', 'o', 'u', 'uː', 'b', 't̪͡s̪', 't͡ʃ', 'd̪', 'd̪͡z̪', 'd͡ʒ', 'f', 'ɡ', 'ɟ', 'x', 'j', 'k', 'c', 'l', 'ʎ', 'm', 'ŋ', 'ɲ', 'p', 'r', 's', 'ʃ', 't̪', 'v', 'z', 'ʒ']
 lav_g2p_dict = {**dict(zip(lav_alphabet, lav_phonemes)), **general_punctuations_dict}
 lav_p2g_dict = {**dict(zip(lav_phonemes, lav_alphabet)), **general_punctuations_dict}
 def lav_phonemes2word(phonemes:[str]):
-    return ['ī' if p=='iː' else lav_p2g_dict[p] for p in phonemes] # just never map /iː/ to 'í', it appears only in 3 places.
+    return phonemes2graphemes_with_doubles(phonemes, lang='lav')
 def lav_clean_sample(x:str) -> str:
-    return x.replace('í', 'ī')
+    return x.replace('í', 'ī') # replace the 3 occurences of 'í' with 'ī'.
 lav_components = [lav_g2p_dict, None, lav_phonemes2word, lav_clean_sample]
 # endregion Latvian - lav
 
@@ -76,7 +77,8 @@ bul_phonemes = ['a', 'b', 'v', 'ɡ', 'd', 'ɛ', 'ʒ', 'z', 'i', 'j', 'k', 'l', '
 bul_g2p_dict = {**dict(zip(bul_alphabet, bul_phonemes)), **general_punctuations_dict}
 bul_p2g_dict = {**dict(zip(bul_phonemes, bul_alphabet)), **general_punctuations_dict}
 def bul_phonemes2word(phonemes:[str]):
-    return ['й' if p=='j' else bul_p2g_dict[p] for p in phonemes] # just never map /j/ to 'ь' (151 out of 55731)
+    special_mappings = {'j': 'й'} # just never map /j/ to 'ь' ('ь' - 151 vs 'й' - 7217)
+    return phonemes2graphemes_with_doubles(phonemes, lang='bul', special_mappings=special_mappings)
 bul_components = [bul_g2p_dict, None, bul_phonemes2word, None]
 # endregion Bulgarian - bul
 
@@ -89,7 +91,8 @@ hun_p2g_dict = {**dict(zip(hun_phonemes, hun_alphabet)), **general_punctuations_
 def hun_word2phonemes(w:[str]):
     return word2phonemes_with_trigraphs(w, 'hun')
 def hun_phonemes2word(phonemes:[str]):
-    return ['i' if p=='i' else hun_p2g_dict[p] for p in phonemes] # just never map /i/ to 'y'
+    special_mappings = {'i': 'i'} # just never map /i/ to 'y' ('y' - 173k vs 'i' - 628k)
+    return phonemes2graphemes_with_doubles(phonemes, lang='hun', special_mappings=special_mappings)
 def hun_clean_sample(x:str) -> str:
     # the " |or| " is a bug of the scraping from Wiktionary. It can appear at the end of a form
     # (search in the data for "jósolj|or|") or between 2 forms (search for "jóslok |or| jósolok").
@@ -152,8 +155,13 @@ def tur_phonemes2word(phonemes:[str]): # in ambiguitive situations, the major vo
         else:
             g = tur_p2g_dict[p]
         graphemes.extend(g if type(g)==list else [g])
-    return graphemes
-tur_components = [tur_g2p_dict, tur_word2phonemes, tur_phonemes2word, None]
+    special_mappings = {}
+    print("This shit ain't working!!!")
+    # return phonemes2graphemes_with_doubles(phonemes, lang='tur', special_mappings=special_mappings)
+    # return graphemes
+def tur_clean_sample(x:str) -> str:
+    return x
+tur_components = [tur_g2p_dict, tur_word2phonemes, tur_phonemes2word, tur_clean_sample]
 # endregion Turkish - tur
 
 
@@ -168,31 +176,19 @@ def fin_word2phonemes(w:[str]):
     w = [c.replace('\xa0', ' ') for c in w]
     return word2phonemes_with_digraphs(w, 'fin')
 def fin_phonemes2word(phonemes:[str]):
-    graphemes = []
-    for p in phonemes:
-        if p == 'e':
-            g = 'e' # ignore 'é' and 'è'
-        elif p == 'oː':
-            g = ['o', 'o'] # ignore 'å'
-        elif p == 'k':
-            g = 'k' # ignore 'q'
-        elif p == 's':
-            g = 's' # ignore 'c'
-        elif p == 'v':
-            g = 'v' # ignore 'w'
-        elif p == 'ɑː':
-            g = ['a', 'a']
-        else:
-            g = fin_p2g_dict[p]
-        graphemes.extend(g if type(g)==list else [g])
-    return graphemes
-
+    special_mappings = {
+        'e': 'e', # ignore 'é' and 'è'
+        'oː': ['o', 'o'], # ignore 'å'
+        'k': 'k', # ignore 'q'
+        's': 's', # ignore 'c'
+        'v': 'v', # ignore 'w'
+    }
+    return phonemes2graphemes_with_doubles(phonemes, lang='fin', special_mappings=special_mappings)
 fin_components = [fin_g2p_dict, fin_word2phonemes, fin_phonemes2word, None]
 # endregion Finnish - fin
 
 # if you wish to support a new language, and a grapheme is mapped to more than a single phoneme
 # (e.g. 'x' -> /ks/), make sure list(grapheme) results in real phonemes
-
 # endregion definedLangs
 
 langs_properties = {'kat': kat_components, 'tur': tur_components, 'swc': swc_components,
@@ -202,43 +198,65 @@ for k in langs_properties:
     if langs_properties[k][3] is None:
         langs_properties[k][3] = lambda x: x
 
-def word2phonemes_with_digraphs(w:[str], lang:str):
-    # break the word to graphemes given some digraphs and convert to a list of phonemes
-    g2p_dict = langs_properties[lang][0]
-    digraphs = list( filter(lambda x: len(x)==2, g2p_dict.keys()) )
-    if lang=='sqi': w = list(filter(lambda g:g!="'", w)) # appears in the data only as part of "për t'u ..." (NFIN)
-    phonemes = []
-    i, flag = 0, False
+def word2phonemes_with_digraphs(w:[str], lang:str, allowed_phoneme_tokens:[str] = allowed_phoneme_tokens) -> [str]: # g2p_mapping was originally called langs_properties[lang][0]
+    # convert the graphemes to a list of phonemes according to the langauge's digraphs
+    g2p_mapping = langs_properties[lang][0]
+    digraphs = list(filter(lambda g: len(g) == 2, g2p_mapping.keys()))
+    phonemes, i, flag = [], 0, False
     while i < len(w):
-        if i<len(w)-1 and w[i]+w[i+1] in digraphs: # the index is before the last character (no risk of exceptions!)
-            phonemes.append(g2p_dict[w[i]+w[i+1]])
-            i+=2
+        if i < len(w)-1 and w[i]+w[i+1] in digraphs:
+            phoneme_token = g2p_mapping[w[i] + w[i + 1]]
+            i += 1
         else:
-            phonemes.append(g2p_dict[w[i]])
-            i+=1
-    return phonemes
-def word2phonemes_with_trigraphs(w:[str], lang:str):
-    # break the word to graphemes given some trigraphs and digraphs and convert to a list of phonemes
-    g2p_dict = langs_properties[lang][0]
-    digraphs = list( filter(lambda x: len(x)==2, g2p_dict.keys()) )
-    trigraphs = list( filter(lambda x: len(x)==3, g2p_dict.keys()) )
-    if lang=='sqi': w = list(filter(lambda g:g!="'", w)) # appears in the data only as part of "për t'u ..." (NFIN)
-    phonemes = []
-    i, flag = 0, False
-    while i < len(w):
-        if i<len(w)-2 and w[i]+w[i+1]+w[i+2] in trigraphs:
-            phonemes.append(g2p_dict[w[i]+w[i+1]+w[i+2]])
-            i+=3
-        if i<len(w)-1 and w[i]+w[i+1] in digraphs: # the index is before the last character (no risk of exceptions!)
-            phonemes.append(g2p_dict[w[i]+w[i+1]])
-            i+=2
-        else:
-            phonemes.append(g2p_dict[w[i]])
-            i+=1
+            phoneme_token = g2p_mapping[w[i]]
+        if phoneme_token not in allowed_phoneme_tokens: # need to decompose to real phonemes
+            phoneme_token = list(phoneme_token)
+        phonemes.extend(phoneme_token if type(phoneme_token) == list else [phoneme_token])
+        i += 1
     return phonemes
 
+def word2phonemes_with_trigraphs(w:[str], lang:str, allowed_phoneme_tokens:[str] = allowed_phoneme_tokens) -> [str]: # g2p_mapping was originally called langs_properties[lang][0]
+    # convert the graphemes to a list of phonemes according to the langauge's trigraphs & digraphs
+    g2p_mapping = langs_properties[lang][0]
+    digraphs = list(filter(lambda x: len(x)==2, g2p_mapping.keys()))
+    trigraphs = list(filter(lambda x: len(x)==3, g2p_mapping.keys()))
+    phonemes, i, flag = [], 0, False
+    while i < len(w):
+        if i < len(w)-2 and w[i]+w[i+1]+w[i+2] in trigraphs:
+            phoneme_token = g2p_mapping[w[i]+w[i+1]+w[i+2]]
+            i += 2
+        elif i < len(w)-1 and w[i]+w[i+1] in digraphs:
+            phoneme_token = g2p_mapping[w[i] + w[i + 1]]
+            i += 1
+        else:
+            phoneme_token = g2p_mapping[w[i]]
+        if phoneme_token not in allowed_phoneme_tokens: # need to decompose to real phonemes
+            phoneme_token = list(phoneme_token)
+        phonemes.extend(phoneme_token if type(phoneme_token) == list else [phoneme_token])
+        i += 1
+    return phonemes
+
+def phonemes2graphemes_with_doubles(w:[str], lang:str, special_mappings:dict = None) -> [str]:
+    # special_mappings is a dictionary that intentionally ignores other possible graphemes at the g2p dictionary.
+    p2g_mapping = {v:k for k,v in langs_properties[lang][0].items()}
+    phoneme_doubles = list(filter(lambda x: len(x) == 2, p2g_mapping.keys()))
+    graphemes, i, flag = [], 0, False
+    while i < len(w):
+        if i < len(w)-1 and w[i]+w[i+1] in phoneme_doubles:
+            grapheme_token = p2g_mapping[w[i] + w[i + 1]]
+            i += 1
+        else:
+            if special_mappings is not None and w[i] in special_mappings: # assuming the sepcial mappings occur only in single real phonemes.
+                grapheme_token = special_mappings[w[i]]
+            else:
+                grapheme_token = p2g_mapping[w[i]]
+        grapheme_token = list(grapheme_token)
+        graphemes.extend(grapheme_token)
+        i += 1
+    return graphemes
+
 def is_g2p_1to1(d:dict): return len(d.values())==len(set(d.values()))
-def are_there_unincluded_phonemes(lang_phonemes:[str]) -> [str]: return [p for p in lang_phonemes if p not in p2f_dict.keys()]
+def are_there_phonemes_unincluded_intheJSON(lang_phonemes:[str]) -> [str]: return [p for p in lang_phonemes if p not in p2f_dict.keys()]
 
 # region manually inserting g-p pairs
 # (copy that section to the console and insert; once done, copy back to the script.
