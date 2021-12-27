@@ -66,7 +66,7 @@ class LanguageSetup:
             return features
 
 
-    def phonemes2word(self, phonemes: [[int]], mode:str) -> str:
+    def phonemes2word(self, phonemes: [[str]], mode:str) -> str:
         """
         Convert a list of phoneme tuples to a word (sequence of graphemes)
         :param phonemes: [(,,), (,,), (,,), ...] or (*IPA symbols*)
@@ -81,18 +81,23 @@ class LanguageSetup:
             else:
                 graphemes = [self._phonemes2graphemes[p] for p in phonemes]
         else: # mode=='features'
-            graphemes = []
-            for f_tuple in phonemes:
-                if PHON_USE_ATTENTION:
-                    p = f_tuple[-1]
-                    g = self._phonemes2graphemes[p]
-                else:
+            if PHON_USE_ATTENTION:
+                phoneme_tokens = [f_tuple[-1] for f_tuple in phonemes]
+                graphemes = self.phonemes2word(phoneme_tokens, 'phonemes')
+            else:
+                graphemes = []
+                for f_tuple in phonemes:
                     f_tuple = tuple(idx2feature[int(i)] for i in f_tuple if i != 'NA')
-                    p = f2p_dict.get(f_tuple)
-
-                    if p is None: g = '#'
-                    else: g = self._phonemes2graphemes[p]
-                graphemes.append(g)
+                    p = f2p_dict.get(f_tuple) # ...get(f_tuple[0]) solves the problem in the case of '-'.
+                    """
+                    TODO:
+                    - Fix the problem for the bul example. make it correct, with no shortcuts - it's critical for the f-f runs.
+                    - Make sure to account for the specs defined at g2p_config.py, probably the solution is to collect the phonemes and call again the method with mode='phonemes'.
+                      Make sure to make it work out with the '#' case (impossible bundle of features)
+                    - Continue for the rest of the languages, there shouldn't be a problem after this big one.
+                    """
+                    g = '#' if p is None else self._phonemes2graphemes[p]
+                    graphemes.append(g)
         return ''.join(graphemes)
 
 def two_way_conversion(w):
@@ -113,7 +118,7 @@ def two_way_conversion(w):
 # Change this to True only when debugging the g2p/p2g conversions!
 debugging_mode = True
 if debugging_mode:
-    PHON_USE_ATTENTION, lang = True, 'bul'
+    PHON_USE_ATTENTION, lang = False, 'bul'
 else:
     from hyper_params_config import PHON_USE_ATTENTION, lang
 
