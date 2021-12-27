@@ -9,7 +9,7 @@ height = ['open', 'open-mid', 'mid', 'close-mid', 'close'] # 22-26
 backness = ['front', 'back', 'central'] # 27-29
 roundness = ['rounded', 'unrounded'] # 30-31
 length = ['long'] # only for vowels; no occurence means short vowel # 32
-general_punctuations = [' ', '-', "'", "̇", '.'] # 33-39
+general_punctuations = [' ', '-', "'", "̇", '.'] # 33-37
 
 phon_features = place + manner + voice + height + backness + roundness + length + general_punctuations
 idx2feature = dict(enumerate(phon_features))
@@ -219,9 +219,8 @@ fin_components = [fin_g2p_dict, fin_word2phonemes, fin_phonemes2word, None]
 # (e.g. 'x' -> /ks/), make sure list(grapheme) results in real phonemes
 # endregion definedLangs
 
-langs_properties = {'kat': kat_components, 'tur': tur_components, 'swc': swc_components,
-                    'sqi': sqi_components, 'bul': bul_components,
-                    'hun': hun_components, 'lav': lav_components, 'fin': fin_components}
+langs_properties = {'bul': bul_components, 'fin': fin_components, 'hun': hun_components, 'kat': kat_components,
+                    'lav': lav_components, 'sqi': sqi_components, 'swc': swc_components, 'tur': tur_components}
 for k in langs_properties:
     if langs_properties[k][3] is None:
         langs_properties[k][3] = lambda x: x
@@ -284,6 +283,7 @@ def phonemes2graphemes_with_doubles(w:[str], lang:str, special_mappings:dict = N
         i += 1
     return graphemes
 
+# for further debugging purposes:
 def is_g2p_1to1(d:dict): return len(d.values())==len(set(d.values()))
 def are_there_phonemes_unincluded_intheJSON(lang_phonemes:[str]) -> [str]: return [p for p in lang_phonemes if p not in p2f_dict.keys()]
 

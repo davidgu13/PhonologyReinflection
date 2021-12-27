@@ -104,14 +104,17 @@ def twoWay_conversion(w):
     print(f"features = {feats}")
     print(f"p2word: {langPhonology.phonemes2word(ps, mode='phonemes')}")
     feats = [f.split(',') for f in ','.join(feats).split(',$,')]
-    print(f"f2word: {langPhonology.phonemes2word(feats,mode='features')}")
+    w_reconstructed = langPhonology.phonemes2word(feats, mode='features')
+    print(f"f2word: {w_reconstructed}")
+    print(f"ED(w, f2word) = {editDistance(w, w_reconstructed)}")
 
 # Change this to True only when debugging the g2p/p2g conversions!
 debugging_mode = True
 if debugging_mode:
-    PHON_USE_ATTENTION, lang = True, 'sqi'
+    PHON_USE_ATTENTION, lang = True, 'kat'
 else:
     from hyper_params_config import PHON_USE_ATTENTION, lang
+
 
 MAX_FEAT_SIZE = max([len(p2f_dict[p]) for p in langs_properties[lang][0].values()])
 langPhonology = LanguageSetup(lang, langs_properties[lang][0], langs_properties[lang][1], langs_properties[lang][2])
@@ -127,27 +130,27 @@ langPhonology = LanguageSetup(lang, langs_properties[lang][0], langs_properties[
 # print(f"ph= {ps}")
 # w2 = phonemes2graphemes_with_doubles(ps, phon_d)
 # print(f"w2= {w2}")
-# import numpy as np
-# def editDistance(str1, str2):
-#     """Simple Levenshtein implementation"""
-#     table = np.zeros([len(str2) + 1, len(str1) + 1])
-#     for i in range(1, len(str2) + 1):
-#         table[i][0] = table[i - 1][0] + 1
-#     for j in range(1, len(str1) + 1):
-#         table[0][j] = table[0][j - 1] + 1
-#     for i in range(1, len(str2) + 1):
-#         for j in range(1, len(str1) + 1):
-#             if str1[j - 1] == str2[i - 1]:
-#                 dg = 0
-#             else:
-#                 dg = 1
-#             table[i][j] = min(table[i - 1][j] + 1, table[i][j - 1] + 1, table[i - 1][j - 1] + dg)
-#     return int(table[len(str2)][len(str1)])
+import numpy as np
+def editDistance(str1, str2):
+    """Simple Levenshtein implementation"""
+    table = np.zeros([len(str2) + 1, len(str1) + 1])
+    for i in range(1, len(str2) + 1):
+        table[i][0] = table[i - 1][0] + 1
+    for j in range(1, len(str1) + 1):
+        table[0][j] = table[0][j - 1] + 1
+    for i in range(1, len(str2) + 1):
+        for j in range(1, len(str1) + 1):
+            if str1[j - 1] == str2[i - 1]:
+                dg = 0
+            else:
+                dg = 1
+            table[i][j] = min(table[i - 1][j] + 1, table[i][j - 1] + 1, table[i - 1][j - 1] + dg)
+    return int(table[len(str2)][len(str1)])
 # print(f"ED = {editDistance(w,w2)
 
 
 
 if __name__ == '__main__':
-    words4example = {'kat': 'მჭირდებოდნენ', 'swc': 'magongjwa', 'sqi': 'rije rrçlldijdhegnj', 'hun': 'hűdályokról', 'bul': 'най-ясното',
-                     'lav': 'abstrahēšana', 'fin': 'ilmaatyynyissä', 'tur': 'yığmalılar mıymış' }
-    twoWay_conversion(words4example[lang])
+    example_words = {'kat': 'მჭირდებოდნენ', 'swc': 'magongjwa', 'sqi': 'rije rrçlldijdhegnj', 'hun': 'hűdályokról', 'bul': 'най-ясното',
+                     'lav': 'abstrahēšana', 'fin': 'ilmaatyynyissä', 'tur': 'yığmalılar mıymış'}
+    twoWay_conversion(example_words[lang])

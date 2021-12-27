@@ -28,7 +28,7 @@ dec_dropout = 0.1 # 0.0 is equivalent to Identity function
 # endregion HPs
 
 parser = ArgumentParser(description="Parse arguments for linguistic configuration")
-parser.add_argument('lang', type=str, choices=['kat', 'tur', 'fin', 'bul', 'hun', 'lav', 'swc', 'sqi'], help="Language to be processed")
+parser.add_argument('lang', type=str, choices=['bul', 'fin', 'hun', 'kat', 'lav', 'sqi', 'swc', 'tur'], help="Language to be processed")
 parser.add_argument('POS', type=str, choices=['V','N','ADJ'], help="Part of speech to be processed")
 parser.add_argument('training_mode', type=str, choices=['form', 'lemma'], help="Can be either form-split or lemma-split")
 parser.add_argument('inp_phon_type', type=str, choices=['g','p','f'], help="Phonological representation of the input")
