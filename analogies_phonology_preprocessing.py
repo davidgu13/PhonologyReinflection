@@ -16,7 +16,6 @@ def remove_double_dollars(sequence:[str]):
 
 class GenericPhonologyProcessing(Data2SamplesConverter):
     # Implements phonology logic while accounting for Analogies format. Use it only if the input & output aren't both graphemes
-    # (in main_network set PHON_UPDATED according to inp_phon_type and out_phon_type)
     def __init__(self, phonology: LanguageSetup):
         super().__init__()
         self.phonology_obj = phonology

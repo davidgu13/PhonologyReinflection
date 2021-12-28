@@ -12,7 +12,7 @@ summaryWriterLogsFolder = join(resultsFolder, "SummaryWriterLogs")
 
 # region HPs
 # Training hyperparameters
-num_epochs = 50 # orignal=50. Note: must be >1 !!!
+num_epochs = 3 # orignal=50. Note: must be >1 !!!
 learning_rate = 3e-4
 batch_size = 32 # original=32
 LR_patience = 6
@@ -36,7 +36,7 @@ parser.add_argument('out_phon_type', type=str, choices=['g','p','f'], help="Phon
 parser.add_argument('analogy_type', type=str, choices=['src2', 'src1_cross1', 'src1_cross2', 'None'], help='The analogies type to be applied')
 parser.add_argument('SEED', type=int, help='Initial seed for all random operations')
 parser.add_argument('device_idx', type=str, help='GPU index')
-parser.add_argument('--ATTN', action='store_true', help="If True, features are combined in a Self-Attention layer to form a single vector.")
+parser.add_argument('--ATTN', action='store_true', help="If True and inp_phon_type=='f', input features are combined in a Self-Attention layer to form a single vector.")
 args = parser.parse_args()
 lang, POS, SEED, device_idx = args.lang, args.POS, args.SEED, args.device_idx
 analogy_type = args.analogy_type
