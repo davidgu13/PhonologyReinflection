@@ -9,7 +9,7 @@ height = ['open', 'open-mid', 'mid', 'close-mid', 'close'] # 22-26
 backness = ['front', 'back', 'central'] # 27-29
 roundness = ['rounded', 'unrounded'] # 30-31
 length = ['long'] # only for vowels; no occurence means short vowel # 32
-punctuations = [' ', '-', "'", "̇", '.', '#'] # 33-38 ; '#' is for predictions of non-existent bundle of features (see languages_setup.py)
+punctuations = [' ', '-', "'", "̇", '.', '#'] # 33-38, '#' is for predictions of non-existent feature bundles (see languages_setup.py)
 
 phon_features = place + manner + voice + height + backness + roundness + length + punctuations
 idx2feature = dict(enumerate(phon_features))
@@ -125,13 +125,12 @@ turkish_vowels = {'a', 'e', 'i', 'o', 'u', 'ı', 'ö', 'ü', 'â', 'î', 'û'}
 turkish_vowels_phonemes = set([tur_g2p_dict[g] for g in turkish_vowels])
 def is_tur_vowel(c): return c in turkish_vowels
 def is_tur_vowel_phoneme(c): return c in turkish_vowels_phonemes
-
+# [aeiouıöüâîû]ğ
 def tur_word2phonemes(graphemes:[str]):
     # Turkish has no digraphs, but the conversion of 'ğ' is a little complex, so we don't use word2phonemes_with_digraphs
-    graphemes = list(''.join(graphemes).casefold()) # lowercasing
     phonemes, i = [], 0
     while i < len(graphemes):
-        g, resulted_phoneme = graphemes[i], ''
+        g, resulted_phoneme = graphemes[i], ['']
         if g == 'ğ': # the previous character must be a vowel -- they must obey the regex [aeiouıöüâîû]ğ
             if i==len(graphemes)-1 or graphemes[i+1]==' ': # last letter before whitespace
                 phonemes = lengthen_last_item(phonemes)
@@ -140,20 +139,23 @@ def tur_word2phonemes(graphemes:[str]):
                 if is_tur_vowel(trigraph[0]) and is_tur_vowel(trigraph[2]):
                     if trigraph[0] == trigraph[2]:
                         phonemes = lengthen_last_item(phonemes)
-                    resulted_phoneme = ''
+                        i += 1
+                    # resulted_phoneme = [''] # unnecessary
                 elif trigraph[0] == 'e': # i.e. trigraph[2] is not a vowel
-                    resulted_phoneme = 'j'
+                    resulted_phoneme = ['j']
                 else:
                     phonemes = lengthen_last_item(phonemes)
+        elif g == 'x':
+            resulted_phoneme = ['k', 's'] # there are only 48 'x' occurences, so will be inversed to ['k', 's']!
         else:
-            resulted_phoneme = tur_g2p_dict[g]
-        if resulted_phoneme != '':
-            phonemes.append(resulted_phoneme)
-        i+=1
+            resulted_phoneme = [tur_g2p_dict[g]]
+        if resulted_phoneme != ['']:
+            phonemes.extend(resulted_phoneme)
+        i += 1
     return phonemes
 
 def tur_phonemes2word(phonemes:[str]):
-    special_mappings = {'j': 'y', 'aː': 'â', 'uː': ['u', 'ğ', 'u']}
+    special_mappings = {'j': 'y', 'aː': 'â', 'iː': ['i', 'ğ', 'i'], 'uː': ['u', 'ğ', 'u'], 'ɛː': ['e', 'ğ']}
     graphemes, i = [], 0
     while i < len(phonemes):
         p = phonemes[i]
@@ -191,10 +193,12 @@ def fin_phonemes2word(phonemes:[str]):
         'k': 'k', # ignore 'q'
         's': 's', # ignore 'c'
         'v': 'v',} # ignore 'w'
-    return phonemes2graphemes_with_doubles(phonemes, lang='fin', special_mappings=special_mappings)
+    result = phonemes2graphemes_with_doubles(phonemes, lang='fin', special_mappings=special_mappings)
+    result = list(''.join(result).replace('x','ks'))
+    return result
 def fin_clean_sample(x:str) -> str:
     return x.replace('\xa0', ' ')
-fin_components = [fin_g2p_dict, fin_word2phonemes, fin_phonemes2word, None]
+fin_components = [fin_g2p_dict, fin_word2phonemes, fin_phonemes2word, fin_clean_sample]
 # endregion Finnish - fin
 # endregion definedLangs
 
@@ -204,7 +208,7 @@ for k in langs_properties:
     if langs_properties[k][3] is None:
         langs_properties[k][3] = lambda x: x
 
-def word2phonemes_with_digraphs(w:[str], lang:str, allowed_phoneme_tokens:[str] = allowed_phoneme_tokens) -> [str]: # g2p_mapping was originally called langs_properties[lang][0]
+def word2phonemes_with_digraphs(w:[str], lang:str, allowed_phoneme_tokens:[str] = allowed_phoneme_tokens) -> [str]:
     # Convert the graphemes to a list of phonemes according to the langauge's digraphs
     g2p_mapping = langs_properties[lang][0]
     digraphs = list(filter(lambda g: len(g) == 2, g2p_mapping.keys()))
@@ -221,7 +225,7 @@ def word2phonemes_with_digraphs(w:[str], lang:str, allowed_phoneme_tokens:[str] 
         i += 1
     return phonemes
 
-def word2phonemes_with_trigraphs(w:[str], lang:str, allowed_phoneme_tokens:[str] = allowed_phoneme_tokens) -> [str]: # g2p_mapping was originally called langs_properties[lang][0]
+def word2phonemes_with_trigraphs(w:[str], lang:str, allowed_phoneme_tokens:[str] = allowed_phoneme_tokens) -> [str]:
     # Convert the graphemes to a list of phonemes according to the langauge's trigraphs & digraphs
     g2p_mapping = langs_properties[lang][0]
     digraphs = list(filter(lambda x: len(x)==2, g2p_mapping.keys()))

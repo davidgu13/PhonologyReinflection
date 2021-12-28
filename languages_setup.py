@@ -128,15 +128,14 @@ def two_way_conversion(w):
 # Change this to True only when debugging the g2p/p2g conversions!
 debugging_mode = True
 if debugging_mode:
-    PHON_USE_ATTENTION, lang = True, 'tur'
+    PHON_USE_ATTENTION, lang = False, 'fin'
 else:
     from hyper_params_config import PHON_USE_ATTENTION, lang
 MAX_FEAT_SIZE = max([len(p2f_dict[p]) for p in langs_properties[lang][0].values() if p in p2f_dict]) # only composite phonemes don't appear in that list
 langPhonology = LanguageSetup(lang, langs_properties[lang][0], langs_properties[lang][1], langs_properties[lang][2])
-# w = list('bщvnmngodzsnkoxeööj')
 
 if __name__ == '__main__':
     # made-up words to test the correctness of the g2p/p2g conversions algorithms (for debugging purposes):
-    example_words = {'bul': 'най-ясюногщжто', 'fin': 'ilmaatyynyissä', 'hun': 'hűdályiokró- l eéfdzgycsklynndzso nyoyaxy', 'kat': 'არ მჭირდ-ებოდყეტ',
-                     'lav': 'abscā t-raķkdzhēļšanģa', 'sqi': 'rdhëije rrçlldgj-ijdhegnjzh', 'swc': "magnchdhe-ong jwng'a", 'tur': 'yığmalılar mıymış'}
+    example_words = {'kat': 'არ მჭირდ-ებოდყეტ', 'swc': "magnchdhe-ong jwng'a", 'sqi': 'rdhëije rrçlldgj-ijdhegnjzh', 'lav': 'abscā t-raķkdzhēļšanģa',
+                     'bul': 'най-ясюногщжто', 'hun': 'hűdályiokró- l eéfdzgycsklynndzso nyoyaxy', 'tur': 'yığmalılksar mveğateğwypûrtâşsmış', 'fin': 'ixlmksnngvnk- èeé aatööböyynyissä'}
     two_way_conversion(example_words[lang])
