@@ -21,17 +21,15 @@ test_file =  join(".data", "Reinflection", f"{lang}.{POS}", f"{lang}.{POS}.{trai
 
 # region output folders
 resultsFolder = "Results"
-evaluation_graphs_folder =  join(resultsFolder, "EvaluationGraphs")
-prediction_files_folder =   join(resultsFolder, "PredictionFiles")
-model_checkpoints_folder =  join(resultsFolder, "Checkpoints")
-logs_folder =               join(resultsFolder, "Logs")
-summaryWriter_logs_folder = join(resultsFolder, "SummaryWriterLogs")
-
-if not isdir(evaluation_graphs_folder):  mkdir(evaluation_graphs_folder)
-if not isdir(prediction_files_folder):   mkdir(prediction_files_folder)
-if not isdir(model_checkpoints_folder):  mkdir(model_checkpoints_folder)
-if not isdir(logs_folder):               mkdir(logs_folder)
-if not isdir(summaryWriter_logs_folder): mkdir(summaryWriter_logs_folder)
+def safely_create_results_subfolders(names):
+    full_paths = []
+    for name in names:
+        full_path = join(resultsFolder, name)
+        if not isdir(full_path): mkdir(full_path)
+        full_paths.append(full_path)
+    return full_paths
+evaluation_graphs_folder, prediction_files_folder, model_checkpoints_folder, logs_folder, summaryWriter_logs_folder = \
+    safely_create_results_subfolders(["EvaluationGraphs", "PredictionFiles", "Checkpoints", "Logs", "SummaryWriterLogs"])
 # endregion output folders
 
 def get_time_now_str(allow_colon:bool):
