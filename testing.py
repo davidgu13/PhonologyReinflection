@@ -1,10 +1,8 @@
-import random
-import os
-from torchtext.legacy.data import TabularDataset
+import random, os, time
 from datetime import timedelta
+from torchtext.legacy.data import TabularDataset
 from torch import load
 from torch.optim import Adam
-import time
 
 from analogies_phonology_preprocessing import combined_phonology_processor
 from utils import bleu, load_checkpoint, srcField, trgField, device

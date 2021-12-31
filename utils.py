@@ -1,16 +1,16 @@
 # The code is based on https://github.com/aladdinpersson/Machine-Learning-Collection/tree/master/ML/Pytorch/more_advanced/Seq2Seq_attention, with some adjustments ;)
 import numpy as np
 import torch
-import torch_scatter # super important! The link I used for installing it: https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html#quick-start
+from torch_scatter import segment_mean_coo # super important! The link I used for installing it: https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html#quick-start
 from torchtext.legacy.data import Field
 from copy import deepcopy
-
 from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
-from analogies_phonology_preprocessing import combined_phonology_processor, GenericPhonologyProcessing
+
 from hyper_params_config import SEED, inp_phon_type, out_phon_type, device_idx, lang
-from languages_setup import MAX_FEAT_SIZE, langs_properties
 from run_setup import get_time_now_str, printF
+from analogies_phonology_preprocessing import combined_phonology_processor, GenericPhonologyProcessing
+from languages_setup import MAX_FEAT_SIZE, langs_properties
 
 device = torch.device(f"cuda:{device_idx}" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(SEED)
@@ -62,7 +62,7 @@ def postprocessBatch(src:torch.Tensor, offsets):
     repeats = torch.ones(new_len, dtype=torch.long, device=device)
     repeats[offsets] = MAX_FEAT_SIZE+1 # 4 = max_size +1
     final_offsets = torch.repeat_interleave(torch.arange(new_len, device=device), repeats)
-    new_emb = torch_scatter.segment_mean_coo(src, final_offsets)
+    new_emb = segment_mean_coo(src, final_offsets)
     return new_emb
 
 def translate_sentence(model, sentence, german, english, device, max_length=50, return_attn=False):

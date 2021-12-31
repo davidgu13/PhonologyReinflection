@@ -1,21 +1,18 @@
-import random
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import utils
-# Declaration of tokenizers, Fields and device were moved to utils
-from utils import translate_sentence, bleu, save_checkpoint, load_checkpoint, srcField, trgField, device, plt
-from torchtext.legacy.data import BucketIterator, TabularDataset
-from network import Encoder, Decoder, Seq2Seq
-import os
-from analogies_phonology_preprocessing import combined_phonology_processor
-import time
+import random, os, time
 from datetime import timedelta
-from hyper_params_config import training_mode, inp_phon_type, out_phon_type, PHON_REEVALUATE, SEED, POS, num_epochs,\
-    learning_rate, batch_size, LR_patience, LR_factor, encoder_embedding_size, decoder_embedding_size, hidden_size,\
+from torch import manual_seed, load
+import torch.optim as optim
+from torch.nn import CrossEntropyLoss
+from torch.nn.utils import clip_grad_norm_
+from torchtext.legacy.data import BucketIterator, TabularDataset
+from hyper_params_config import training_mode, inp_phon_type, out_phon_type, PHON_REEVALUATE, SEED, POS, num_epochs, \
+    learning_rate, batch_size, LR_patience, LR_factor, encoder_embedding_size, decoder_embedding_size, hidden_size, \
     num_layers, enc_dropout, dec_dropout
-from run_setup import train_file, dev_file, model_checkpoints_folder, model_checkpoint_file, predictions_file,\
+from run_setup import train_file, dev_file, model_checkpoints_folder, model_checkpoint_file, predictions_file, \
     hyper_params_to_print, summary_writer, evaluation_graphs_file, get_time_now_str, time_stamp, printF
+from utils import translate_sentence, bleu, save_checkpoint, load_checkpoint, srcField, trgField, device, plt
+from analogies_phonology_preprocessing import combined_phonology_processor
+from network import Encoder, Decoder, Seq2Seq
 
 def show_readable_triplet(src, trg, pred):
     # Presents the triplet in a more tidy way (no converting)
@@ -27,7 +24,7 @@ def main():
     # Note: the arguments parsing occurs globally at hyper_params_config.py
     t0=time.time()
     random.seed(SEED)
-    torch.manual_seed(SEED)
+    manual_seed(SEED) # torch.manual_seed
     save_model = True
     summary_writer_step = 0
 
@@ -60,7 +57,7 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     printF("- Defining some more stuff...")
-    criterion = nn.CrossEntropyLoss(ignore_index=srcField.vocab.stoi["<pad>"]) # '<pad>''s index
+    criterion = CrossEntropyLoss(ignore_index=srcField.vocab.stoi["<pad>"]) # '<pad>''s index
     lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=LR_patience, verbose=True, factor=LR_factor) # mode='max' bc we want to maximize the accuracy
     # endregion defineNets
 
@@ -100,7 +97,7 @@ def main():
 
             # Clip to avoid exploding gradient issues, makes sure grads are
             # within a healthy range
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
+            clip_grad_norm_(model.parameters(), max_norm=1)
 
             # Gradient descent step
             optimizer.step()
@@ -170,7 +167,7 @@ def main():
     # Load the best checkpoint and apply it on the dev set one last time. Report the results and make sure they are equal to best_measures.
     printF("Loading the best model")
     best_model_checkpoint_file = [os.path.join(model_checkpoints_folder, f) for f in os.listdir(model_checkpoints_folder) if time_stamp in f][0]
-    load_checkpoint(torch.load(best_model_checkpoint_file), model, optimizer)
+    load_checkpoint(load(best_model_checkpoint_file), model, optimizer)
     printF("Applying model on validation set")
     if PHON_REEVALUATE:
         ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, converter=combined_phonology_processor, output_file=predictions_file)

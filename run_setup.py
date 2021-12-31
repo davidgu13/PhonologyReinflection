@@ -1,7 +1,7 @@
 # This file links between hyper_params_config.py and utils.py & main.py
+from os import mkdir
+from os.path import join, isdir
 from torch.utils.tensorboard import SummaryWriter  # to print to tensorboard
-from os.path import join
-import os
 from hyper_params_config import lang, POS, training_mode, inp_phon_type, out_phon_type, analogy_type, SEED, device_idx,\
     PHON_USE_ATTENTION, PHON_UPGRADED, ANALOGY_MODE
 from hyper_params_config import num_epochs, learning_rate, batch_size, encoder_embedding_size, decoder_embedding_size, hidden_size
@@ -27,11 +27,11 @@ model_checkpoints_folder =  join(resultsFolder, "Checkpoints")
 logs_folder =               join(resultsFolder, "Logs")
 summaryWriter_logs_folder = join(resultsFolder, "SummaryWriterLogs")
 
-if not os.path.isdir(evaluation_graphs_folder):  os.mkdir(evaluation_graphs_folder)
-if not os.path.isdir(prediction_files_folder):   os.mkdir(prediction_files_folder)
-if not os.path.isdir(model_checkpoints_folder):  os.mkdir(model_checkpoints_folder)
-if not os.path.isdir(logs_folder):               os.mkdir(logs_folder)
-if not os.path.isdir(summaryWriter_logs_folder): os.mkdir(summaryWriter_logs_folder)
+if not isdir(evaluation_graphs_folder):  mkdir(evaluation_graphs_folder)
+if not isdir(prediction_files_folder):   mkdir(prediction_files_folder)
+if not isdir(model_checkpoints_folder):  mkdir(model_checkpoints_folder)
+if not isdir(logs_folder):               mkdir(logs_folder)
+if not isdir(summaryWriter_logs_folder): mkdir(summaryWriter_logs_folder)
 # endregion output folders
 
 def get_time_now_str(allow_colon:bool):
