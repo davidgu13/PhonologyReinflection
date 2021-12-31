@@ -1,14 +1,6 @@
-from os.path import join
 from argparse import ArgumentParser
 
 data_types = {'g': 'graphemes', 'p': 'phonemes', 'f': 'features'}
-
-resultsFolder = "Results"
-evaluationGraphsFolder = join(resultsFolder, "EvaluationGraphs")
-predictionFilesFolder = join(resultsFolder, "PredictionFiles")
-ckpts_dir = join(resultsFolder, "Checkpoints")
-logsFolder = join(resultsFolder, "Logs")
-summaryWriterLogsFolder = join(resultsFolder, "SummaryWriterLogs")
 
 # region HPs
 # Training hyperparameters
@@ -49,21 +41,3 @@ assert not (analogy_type=='src2' and training_mode=='lemma'), "2-Source is undef
 PHON_UPGRADED = inp_phon_type=='features'
 PHON_REEVALUATE = out_phon_type != 'graphemes' # evaluation at the graphemes-level is also required
 PHON_USE_ATTENTION = args.ATTN and PHON_UPGRADED # apply self-attention to the features when extracting the average (olny if PHON_UPGRADED)
-
-
-# A file to which all logs will be printed. Automatically generated in logsFolder:
-all_params_str = f"{lang}_{POS}_{training_mode}_{inp_phon_type[0]}_{out_phon_type[0]}_{analogy_type}_{SEED}_{device_idx}{'_attn' if PHON_USE_ATTENTION else ''}"
-log_file = join(logsFolder, all_params_str+'.txt')
-
-
-settings = f"""Run settings:
-- language = {lang}, part-of-speech = {POS}, log file = {log_file}
-- split-type = {training_mode}
-- input_format = {inp_phon_type}, output_format = {out_phon_type}, phon_upgraded = {PHON_UPGRADED}, phon_self_attention = {PHON_USE_ATTENTION}
-- analogy_mode = {ANALOGY_MODE}{f", analogy_type = {analogy_type}" if ANALOGY_MODE else ''}"""
-print(settings)
-open(log_file, 'w', encoding='utf8').write(settings + '\n')
-
-train_file = join(".data", "Reinflection", f"{lang}.{POS}", f"{lang}.{POS}.{training_mode}.train.tsv")
-dev_file =   join(".data", "Reinflection", f"{lang}.{POS}", f"{lang}.{POS}.{training_mode}.dev.tsv")
-test_file =  join(".data", "Reinflection", f"{lang}.{POS}", f"{lang}.{POS}.{training_mode}.test.tsv") # used only in testing.py

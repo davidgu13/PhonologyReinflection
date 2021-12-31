@@ -3,20 +3,19 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import utils
-from utils import translate_sentence, bleu, save_checkpoint, load_checkpoint, srcField, trgField, device, plt, get_time_now_str, printF
-from torch.utils.tensorboard import SummaryWriter  # to print to tensorboard
+# Declaration of tokenizers, Fields and device were moved to utils
+from utils import translate_sentence, bleu, save_checkpoint, load_checkpoint, srcField, trgField, device, plt
 from torchtext.legacy.data import BucketIterator, TabularDataset
 from network import Encoder, Decoder, Seq2Seq
 import os
 from analogies_phonology_preprocessing import combined_phonology_processor
-# Definition of tokenizers, Fields and device were moved to utils
 import time
 from datetime import timedelta
 from hyper_params_config import training_mode, inp_phon_type, out_phon_type, PHON_REEVALUATE, SEED, POS, num_epochs,\
     learning_rate, batch_size, LR_patience, LR_factor, encoder_embedding_size, decoder_embedding_size, hidden_size,\
-    num_layers, enc_dropout, dec_dropout, ckpts_dir, train_file, dev_file, all_params_str,\
-    evaluationGraphsFolder, predictionFilesFolder, summaryWriterLogsFolder
-
+    num_layers, enc_dropout, dec_dropout
+from run_setup import train_file, dev_file, model_checkpoints_folder, model_checkpoint_file, predictions_file,\
+    hyper_params_to_print, summary_writer, evaluation_graphs_file, get_time_now_str, time_stamp, printF
 
 def show_readable_triplet(src, trg, pred):
     # Presents the triplet in a more tidy way (no converting)
@@ -29,6 +28,8 @@ def main():
     t0=time.time()
     random.seed(SEED)
     torch.manual_seed(SEED)
+    save_model = True
+    summary_writer_step = 0
 
     printF("- Generating the datasets:")
     printF(f"\ttrain_file = {train_file}, dev_file = {dev_file}")
@@ -37,22 +38,6 @@ def main():
     printF("- Building vocabularies")
     srcField.build_vocab(train_data, dev_data) # no limitation of max_size or min_freq is needed.
     trgField.build_vocab(train_data, dev_data) # no limitation of max_size or min_freq is needed.
-
-    ### We're ready to define everything we need for training our Seq2Seq model ###
-    printF("- Defining hyper-params")
-    save_model = True
-    time_stamp = get_time_now_str(allow_colon=False) # the time when the run started
-    if not os.path.isdir(evaluationGraphsFolder): os.mkdir(evaluationGraphsFolder)
-    if not os.path.isdir(predictionFilesFolder): os.mkdir(predictionFilesFolder)
-    if not os.path.isdir(ckpts_dir): os.mkdir(ckpts_dir)
-    ckpt_path = os.path.join(ckpts_dir, f"ckpt_{time_stamp}_{all_params_str}.pth.tar")
-    preds_file = os.path.join(predictionFilesFolder, f"preds_{time_stamp}_{all_params_str}.txt")
-
-    comment = f"{all_params_str}, epochs={num_epochs}, lr={learning_rate}, batch={batch_size}, embed={encoder_embedding_size}, hidden_size={hidden_size}, time_stamp={time_stamp}"
-    printF(f"- Hyper-Params: {comment}")
-    printF("- Defining a SummaryWriter object")
-    # Tensorboard to get nice loss plot
-    writer, summary_step = SummaryWriter(summaryWriterLogsFolder, comment=comment), 0
 
     printF("- Generating BucketIterator objects")
     train_iterator, dev_iterator = BucketIterator.splits(
@@ -75,8 +60,7 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     printF("- Defining some more stuff...")
-    pad_idx = srcField.vocab.stoi["<pad>"]
-    criterion = nn.CrossEntropyLoss(ignore_index=pad_idx)
+    criterion = nn.CrossEntropyLoss(ignore_index=srcField.vocab.stoi["<pad>"]) # '<pad>''s index
     lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=LR_patience, verbose=True, factor=LR_factor) # mode='max' bc we want to maximize the accuracy
     # endregion defineNets
 
@@ -87,7 +71,7 @@ def main():
 
     printF("Let's begin training!\n")
     for epoch in range(1, num_epochs + 1):
-        printF(f"[Epoch {epoch} / {num_epochs}] (initial hyper-params: {comment})")
+        printF(f"[Epoch {epoch} / {num_epochs}] (initial hyper-params: {hyper_params_to_print})")
         printF(f"lr = {optimizer.state_dict()['param_groups'][0]['lr']:.7f}")
         model.train()
         printF(f"Starting the epoch on: {get_time_now_str(allow_colon=True)}.")
@@ -122,8 +106,8 @@ def main():
             optimizer.step()
 
             # Plot to tensorboard
-            writer.add_scalar("Training loss", loss, global_step=summary_step)
-            summary_step += 1
+            summary_writer.add_scalar("Training loss", loss, global_step=summary_writer_step)
+            summary_writer_step += 1
 
         model.eval()
         # Evaluate the performances on examples_for_printing
@@ -152,15 +136,15 @@ def main():
 
 
         if PHON_REEVALUATE:
-            ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, converter=combined_phonology_processor, output_file=preds_file)
-            writer.add_scalar("Dev set Phon-Accuracy", accuracy_phon, global_step=epoch)
+            ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, converter=combined_phonology_processor, output_file=predictions_file)
+            summary_writer.add_scalar("Dev set Phon-Accuracy", accuracy_phon, global_step=epoch)
             extra_str = f"; avgED_phon = {ED_phon}; avgAcc_phon = {accuracy_phon}"
             accs_phon.append(accuracy_phon)
             EDs_phon.append(ED_phon)
         else:
             ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device)
             extra_str=''
-        writer.add_scalar("Dev set Morph-Accuracy", accuracy_morph, global_step=epoch)
+        summary_writer.add_scalar("Dev set Morph-Accuracy", accuracy_morph, global_step=epoch)
         printF(f"avgEDmorph = {ED_morph}; avgAcc_morph = {accuracy_morph}{extra_str}\n")
 
         accs_morph.append(accuracy_morph)
@@ -169,15 +153,15 @@ def main():
 
         # region model_selection
         if save_model and epoch==1: # first epoch
-            save_checkpoint(model, optimizer, filename=ckpt_path.replace('ckpt',f'ckpt_1'))
+            save_checkpoint(model, optimizer, filename=model_checkpoint_file.replace('Model_Checkpoint_',f'Model_Checkpoint__1'))
         elif save_model:
             # Check whether the last morph_accuracy was higher than the max. If yes, replace the ckpt with the last one.
             if accuracy_morph > max_morph_acc:
                 max_morph_acc = accuracy_morph
                 best_measures = [ED_phon, accuracy_phon, ED_morph, accuracy_morph, epoch] if PHON_REEVALUATE else [ED_morph, accuracy_morph, epoch]
-                assert len([f for f in os.listdir(ckpts_dir) if time_stamp in f])==1
-                ckpt_to_delete = [os.path.join(ckpts_dir, f) for f in os.listdir(ckpts_dir) if time_stamp in f][0]
-                temp_ckpt_name = ckpt_path.replace('ckpt',f'ckpt_{epoch}')
+                assert len([f for f in os.listdir(model_checkpoints_folder) if time_stamp in f]) == 1
+                ckpt_to_delete = [os.path.join(model_checkpoints_folder, f) for f in os.listdir(model_checkpoints_folder) if time_stamp in f][0]
+                temp_ckpt_name = model_checkpoint_file.replace('Model_Checkpoint_',f'Model_Checkpoint_{epoch}')
                 save_checkpoint(model, optimizer, filename=temp_ckpt_name, file_to_delete=ckpt_to_delete)
             else: printF(f"Checkpoint didn't change. Current best (Accuracy={max_morph_acc}) achieved at epoch {best_measures[-1]}")
         # endregion model_selection
@@ -185,15 +169,15 @@ def main():
 
     # Load the best checkpoint and apply it on the dev set one last time. Report the results and make sure they are equal to best_measures.
     printF("Loading the best model")
-    ckpt_path = [os.path.join(ckpts_dir, f) for f in os.listdir(ckpts_dir) if time_stamp in f][0]
-    load_checkpoint(torch.load(ckpt_path), model, optimizer)
+    best_model_checkpoint_file = [os.path.join(model_checkpoints_folder, f) for f in os.listdir(model_checkpoints_folder) if time_stamp in f][0]
+    load_checkpoint(torch.load(best_model_checkpoint_file), model, optimizer)
     printF("Applying model on validation set")
     if PHON_REEVALUATE:
-        ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, converter=combined_phonology_processor, output_file=preds_file)
+        ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, converter=combined_phonology_processor, output_file=predictions_file)
         assert [ED_phon, accuracy_phon, ED_morph, accuracy_morph] == best_measures[:-1] # sanity check
         printF(f"Phonological level: ED score on dev set is {ED_phon}. Avg-Accuracy is {accuracy_phon}.")
     else:
-        ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, output_file=preds_file)
+        ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, output_file=predictions_file)
         assert [ED_morph, accuracy_morph] == best_measures[:-1] # sanity check, for debugging purposes
     printF(f"Morphological level: ED = {ED_morph}, Avg-Accuracy = {accuracy_morph}.")
 
@@ -207,12 +191,10 @@ def main():
     else:
         plt.subplot(121), plt.title("Morph-Acc"), plt.plot(accs_morph)
         plt.subplot(122), plt.title("Morph-ED"), plt.plot(EDs_morphs)
-    img_path = os.path.join("Results/EvaluationGraphs", f"EvaluationGraph_{time_stamp}_{all_params_str}.png")
-    printF(f'Saving the plot of the results on {img_path}')
-    plt.savefig(img_path)
+    printF(f'Saving the plot of the results on {evaluation_graphs_file}')
+    plt.savefig(evaluation_graphs_file)
     # endregion plotting
-    printF(f'Elapsed time is {str(timedelta(seconds=time.time()-t0))}')
-
+    printF(f'Elapsed time is {str(timedelta(seconds=time.time()-t0))}. Goodbye!')
 
 if __name__ == '__main__':
     main()

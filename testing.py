@@ -10,21 +10,22 @@ from analogies_phonology_preprocessing import combined_phonology_processor
 from utils import bleu, load_checkpoint, srcField, trgField, device
 from network import Encoder, Decoder, Seq2Seq
 from hyper_params_config import training_mode, inp_phon_type, out_phon_type, PHON_REEVALUATE, PHON_UPGRADED, ANALOGY_MODE,\
-    analogy_type, learning_rate, encoder_embedding_size, train_file, dev_file, test_file, \
-    decoder_embedding_size, hidden_size, num_layers, enc_dropout, dec_dropout, predictionFilesFolder
+    analogy_type, learning_rate, encoder_embedding_size, decoder_embedding_size, hidden_size, \
+    num_layers, enc_dropout, dec_dropout
+from run_setup import train_file, dev_file, prediction_files_folder
 
 def main():
     t0=time.time()
-    ckpt_path = os.path.join("Results/Checkpoints", "ckpt_41_2021-09-01 123810_lemma_src1_cross1.pth.tar")
-    preds_file = os.path.join(predictionFilesFolder, os.path.split(ckpt_path)[1].replace(".pth.tar", ".txt"))
-    assert training_mode in ckpt_path
-    if PHON_REEVALUATE: assert '_phon' in ckpt_path
-    if ANALOGY_MODE: assert analogy_type in ckpt_path
+    model_checkpoint_file = os.path.join("Results/Checkpoints", "ckpt_41_2021-09-01 123810_lemma_src1_cross1.pth.tar")
+    preds_file = os.path.join(prediction_files_folder, os.path.split(model_checkpoint_file)[1].replace(".pth.tar", ".txt"))
+    assert training_mode in model_checkpoint_file
+    if PHON_REEVALUATE: assert '_phon' in model_checkpoint_file
+    if ANALOGY_MODE: assert analogy_type in model_checkpoint_file
 
     print(f"\nConfiguration: split-type = {training_mode}, inp_phon_type = {inp_phon_type}, analogy_mode = {ANALOGY_MODE}\n"
           f"Trained on file: {train_file}\n"
           f"Validation file: {dev_file}\n"
-          f"Checkpoint file: {ckpt_path}")
+          f"Checkpoint file: {model_checkpoint_file}")
 
     train_data, dev_data = TabularDataset.splits(path='', train=train_file, validation=dev_file,
                                                  fields=[("src", srcField), ("trg", trgField)], format='tsv') # test data is out of the game.
@@ -42,7 +43,7 @@ def main():
     model2 = Seq2Seq(encoder_net, decoder_net).to(device)
     optimizer2 = Adam(model2.parameters(), lr=learning_rate)
     print("Loading the model")
-    ckpt = load(ckpt_path)
+    ckpt = load(model_checkpoint_file)
     load_checkpoint(ckpt, model2, optimizer2, verbose=False)
     print("Applying on validation set")
     if out_phon_type!='graphemes' and not PHON_UPGRADED:

@@ -1,5 +1,5 @@
 import torch.nn as nn
-from utils import *
+from utils import torch, srcField, trgField, device, get_abs_offsets, postprocessBatch
 import random
 from hyper_params_config import PHON_UPGRADED, PHON_USE_ATTENTION, SEED
 from languages_setup import MAX_FEAT_SIZE
