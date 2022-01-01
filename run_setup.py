@@ -42,7 +42,7 @@ user_params_with_time_stamp = f"{time_stamp}_{user_params_config}"
 # region output files
 evaluation_graphs_file = join(evaluation_graphs_folder, f"EvaluationGraph_{user_params_with_time_stamp}.png")
 model_checkpoint_file =  join(model_checkpoints_folder, f"Model_Checkpoint_{user_params_with_time_stamp}.pth.tar")
-logs_file =              join(logs_folder, f"{user_params_with_time_stamp}.txt")
+logs_file =              join(logs_folder, f"Logs_{user_params_with_time_stamp}.txt")
 predictions_file =       join(prediction_files_folder, f"Predictions_{user_params_with_time_stamp}.txt")
 # endregion output files
 
@@ -54,7 +54,8 @@ printF(user_params_config_to_print)
 printF(f"""
 Logs file: {logs_file}
 Predictions file: {predictions_file}
-Loss & Accuracy graph: {evaluation_graphs_file}
+Loss & Accuracy graph file: {evaluation_graphs_file}
+Best model's folder: {model_checkpoints_folder}
 """)
 
 hyper_params_to_print = f"""#epochs = {num_epochs},

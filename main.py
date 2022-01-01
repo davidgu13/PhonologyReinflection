@@ -10,7 +10,7 @@ from hyper_params_config import training_mode, inp_phon_type, out_phon_type, PHO
     num_layers, enc_dropout, dec_dropout
 from run_setup import train_file, dev_file, model_checkpoints_folder, model_checkpoint_file, predictions_file, \
     hyper_params_to_print, summary_writer, evaluation_graphs_file, get_time_now_str, time_stamp, printF
-from utils import translate_sentence, bleu, save_checkpoint, load_checkpoint, srcField, trgField, device, plt
+from utils import translate_sentence, bleu, save_checkpoint, load_checkpoint, srcField, trgField, device, plt, editDistance
 from analogies_phonology_preprocessing import combined_phonology_processor
 from network import Encoder, Decoder, Seq2Seq
 
@@ -68,7 +68,7 @@ def main():
 
     printF("Let's begin training!\n")
     for epoch in range(1, num_epochs + 1):
-        printF(f"[Epoch {epoch} / {num_epochs}] (initial hyper-params: {hyper_params_to_print})")
+        printF(f"[Epoch {epoch} / {num_epochs}] (hyper-params: {hyper_params_to_print})")
         printF(f"lr = {optimizer.state_dict()['param_groups'][0]['lr']:.7f}")
         model.train()
         printF(f"Starting the epoch on: {get_time_now_str(allow_colon=True)}.")
@@ -113,7 +113,7 @@ def main():
             if translated_sent[-1]=='<eos>':
                 translated_sent = translated_sent[:-1]
             src, trg, pred = ex.src, ex.trg, translated_sent # all the outputs are [str]; represents phonological stuff only if out_phon_type!='graphemes'
-            phon_ed = utils.editDistance(trg, pred)
+            phon_ed = editDistance(trg, pred)
             src_print, trg_print, pred_print = show_readable_triplet(src, trg, pred)
             printF(f"{i}. input: {src_print} ; gold: {trg_print} ; pred: {pred_print} ; ED = {phon_ed}")
 
@@ -126,7 +126,7 @@ def main():
             if inp_phon_type!='graphemes' or out_phon_type!='graphemes':
                 src_morph, trg_morph, pred_morph = combined_phonology_processor.phon_elements2morph_elements_generic(src, trg, pred)
                 if out_phon_type!='graphemes': # another evaluation metric is needed; the source format is irrelevant
-                    morph_ed_print = utils.editDistance(trg_morph, pred_morph)
+                    morph_ed_print = editDistance(trg_morph, pred_morph)
                     printF(f"{i}. input_morph: {src_morph} ; gold_morph: {trg_morph} ; pred_morph: {pred_morph} ; morphlvl_ED = {morph_ed_print}\n")
                 else:
                     printF(f"{i}. input_morph: {src_morph} ; gold_morph: {''.join(trg_morph)} ; pred_morph: {''.join(pred_morph)}\n")
@@ -149,18 +149,19 @@ def main():
         printF(f"Ending the epoch on: {get_time_now_str(allow_colon=True)}.")
 
         # region model_selection
-        if save_model and epoch==1: # first epoch
-            save_checkpoint(model, optimizer, filename=model_checkpoint_file.replace('Model_Checkpoint_',f'Model_Checkpoint__1'))
-        elif save_model:
-            # Check whether the last morph_accuracy was higher than the max. If yes, replace the ckpt with the last one.
-            if accuracy_morph > max_morph_acc:
-                max_morph_acc = accuracy_morph
-                best_measures = [ED_phon, accuracy_phon, ED_morph, accuracy_morph, epoch] if PHON_REEVALUATE else [ED_morph, accuracy_morph, epoch]
-                assert len([f for f in os.listdir(model_checkpoints_folder) if time_stamp in f]) == 1
-                ckpt_to_delete = [os.path.join(model_checkpoints_folder, f) for f in os.listdir(model_checkpoints_folder) if time_stamp in f][0]
-                temp_ckpt_name = model_checkpoint_file.replace('Model_Checkpoint_',f'Model_Checkpoint_{epoch}')
-                save_checkpoint(model, optimizer, filename=temp_ckpt_name, file_to_delete=ckpt_to_delete)
-            else: printF(f"Checkpoint didn't change. Current best (Accuracy={max_morph_acc}) achieved at epoch {best_measures[-1]}")
+        if save_model:
+            if epoch == 1: # first epoch
+                save_checkpoint(model, optimizer, filename=model_checkpoint_file.replace('Model_Checkpoint',f'Model_Checkpoint_1'))
+            else:
+                # Check whether the last morph_accuracy was higher than the max. If yes, replace the ckpt with the last one.
+                if accuracy_morph > max_morph_acc:
+                    max_morph_acc = accuracy_morph
+                    best_measures = [ED_phon, accuracy_phon, ED_morph, accuracy_morph, epoch] if PHON_REEVALUATE else [ED_morph, accuracy_morph, epoch]
+                    assert len([f for f in os.listdir(model_checkpoints_folder) if time_stamp in f]) == 1
+                    ckpt_to_delete = [os.path.join(model_checkpoints_folder, f) for f in os.listdir(model_checkpoints_folder) if time_stamp in f][0]
+                    temp_ckpt_name = model_checkpoint_file.replace('Model_Checkpoint',f'Model_Checkpoint_{epoch}')
+                    save_checkpoint(model, optimizer, filename=temp_ckpt_name, file_to_delete=ckpt_to_delete)
+                else: printF(f"Checkpoint didn't change. Current best (Accuracy={max_morph_acc}) achieved at epoch {best_measures[-1]}")
         # endregion model_selection
         lr_scheduler.step(accuracy_morph) # update only after model_selection
 

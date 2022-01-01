@@ -20,15 +20,15 @@ dec_dropout = 0.1 # 0.0 is equivalent to Identity function
 # endregion HPs
 
 parser = ArgumentParser(description="Parse arguments for linguistic configuration")
-parser.add_argument('lang', type=str, choices=['bul', 'fin', 'hun', 'kat', 'lav', 'sqi', 'swc', 'tur'], help="Language to be processed")
-parser.add_argument('POS', type=str, choices=['V','N','ADJ'], help="Part of speech to be processed")
-parser.add_argument('training_mode', type=str, choices=['form', 'lemma'], help="Can be either form-split or lemma-split")
-parser.add_argument('inp_phon_type', type=str, choices=['g','p','f'], help="Phonological representation of the input")
-parser.add_argument('out_phon_type', type=str, choices=['g','p','f'], help="Phonological representation of the output")
-parser.add_argument('analogy_type', type=str, choices=['src2', 'src1_cross1', 'src1_cross2', 'None'], help='The analogies type to be applied')
-parser.add_argument('SEED', type=int, help='Initial seed for all random operations')
-parser.add_argument('device_idx', type=str, help='GPU index')
-parser.add_argument('--ATTN', action='store_true', help="If True and inp_phon_type=='f', input features are combined in a Self-Attention layer to form a single vector.")
+parser.add_argument('lang', type=str, choices=['bul', 'fin', 'hun', 'kat', 'lav', 'sqi', 'swc', 'tur'], help="Language to be processed", nargs='?', default='kat')
+parser.add_argument('POS', type=str, choices=['V','N','ADJ'], help="Part of speech to be processed", nargs='?', default='V')
+parser.add_argument('training_mode', type=str, choices=['form', 'lemma'], help="Can be either form-split or lemma-split", nargs='?', default='form')
+parser.add_argument('inp_phon_type', type=str, choices=['g','p','f'], help="Phonological representation of the input", nargs='?', default='g')
+parser.add_argument('out_phon_type', type=str, choices=['g','p','f'], help="Phonological representation of the output", nargs='?', default='g')
+parser.add_argument('analogy_type', type=str, choices=['src2', 'src1_cross1', 'src1_cross2', 'None'], help='The analogies type to be applied', nargs='?', default='None')
+parser.add_argument('SEED', type=int, help='Initial seed for all random operations', nargs='?', default=42)
+parser.add_argument('device_idx', type=str, help='GPU index', nargs='?', default='0')
+parser.add_argument('--ATTN', action='store_true', help="If True and inp_phon_type=='f', input features are combined in a Self-Attention layer to form a single vector.", default=False)
 args = parser.parse_args()
 lang, POS, SEED, device_idx = args.lang, args.POS, args.SEED, args.device_idx
 analogy_type = args.analogy_type

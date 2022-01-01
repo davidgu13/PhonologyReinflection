@@ -22,7 +22,7 @@ trg_tokenizer = lambda x: x.split(',')
 # Also, preprocessing of g-g reinflection (the standard variation) is supported, to maintain consistency.
 def phon_extended_src_preprocess(x: [str]) -> [str]:
     # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
-    x = langs_properties[lang][3](','.join(x)).split(',')
+    x = langs_properties[lang][3](','.join(x)).split(',') # clean the data
     if inp_phon_type=='graphemes':
         return x # do nothing
     else:
