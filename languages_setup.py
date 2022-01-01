@@ -47,7 +47,7 @@ class LanguageSetup:
         self._phonemes = list(self._graphemes2phonemes.values())
 
         self._manual_word2phonemes = manual_word2phonemes
-        self._manual_phonemes2word = manual_phonemes2word
+        self.manual_phonemes2word = manual_phonemes2word
 
     def get_lang_name(self): return self._name
     def get_lang_alphabet(self): return self._alphabet
@@ -93,8 +93,8 @@ class LanguageSetup:
         assert mode in {'features', 'phonemes'}, f"Mode {mode} is invalid"
 
         if mode=='phonemes':
-            if self._manual_phonemes2word:
-                graphemes = self._manual_phonemes2word(phonemes)
+            if self.manual_phonemes2word:
+                graphemes = self.manual_phonemes2word(phonemes)
             else:
                 graphemes = [self._phonemes2graphemes[p] for p in phonemes]
         else: # mode=='features'
@@ -105,7 +105,7 @@ class LanguageSetup:
                 for f_tuple in phonemes:
                     f_tuple = tuple(idx2feature[int(i)] for i in f_tuple if i != 'NA')
                     p = f2p_dict.get(f_tuple)
-                    if p is None: p = "#" # the predicted bundle is illegal
+                    if p is None or p not in self._phonemes: p = "#" # the predicted bundle is illegal or doesn't exist in this language
                     phoneme_tokens.append(p)
             graphemes = self.phonemes2word(phoneme_tokens, 'phonemes')
         return ''.join(graphemes)
@@ -126,7 +126,7 @@ def two_way_conversion(w):
     print(f"f2word: {f2word}\nED(w, f2word) = {editDistance(w, f2word)}")
 
 # Change this to True only when debugging the g2p/p2g conversions!
-debugging_mode = True
+debugging_mode = False
 if debugging_mode:
     PHON_USE_ATTENTION, lang = False, 'fin'
 else:

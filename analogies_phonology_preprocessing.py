@@ -2,7 +2,7 @@ import os
 from more_itertools import flatten
 from languages_setup import langPhonology, LanguageSetup, joinit
 from data2samples_converter import Data2SamplesConverter
-from hyper_params_config import analogy_type, training_mode, inp_phon_type, out_phon_type, POS
+from hyper_params_config import analogy_type, training_mode, inp_phon_type, out_phon_type, POS, PHON_USE_ATTENTION
 
 def remove_double_dollars(sequence:[str]):
     # used during the conversion to graphemes-mode
@@ -54,7 +54,7 @@ class GenericPhonologyProcessing(Data2SamplesConverter):
         assert mode in {'features', 'phonemes'}
         if mode=='features': # type(sequence)==str
             phon_feats = sequence.split(',$,') # cannot handle more than 2 following '$' chars in a row. Not an issue for now.
-            if self.phonology_obj._manual_phonemes2word:
+            if self.phonology_obj.manual_phonemes2word and PHON_USE_ATTENTION:
                 new_sequence = self.phonology_obj.phonemes2word([e.split(',')[-1] for e in phon_feats], mode='phonemes')
             else:
                 new_sequence = self.phonology_obj.phonemes2word([p.split(',') for p in phon_feats], mode='features')
