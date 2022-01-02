@@ -34,7 +34,7 @@ class GenericPhonologyProcessing(Data2SamplesConverter):
         if not convert_src: new_src_list = src_list
         else:
             src_list = src_list.split(',+,')
-            src_list, new_src_list = [e.replace(',',';') if str.isupper(e) else e.replace(',','') for e in src_list], []
+            src_list, new_src_list = [e.replace(',',';') if str.isupper(e) and POS in e else e.replace(',','') for e in src_list], []
             for i,e in enumerate(src_list):
                 if ';' in e:
                     new_src_list.append(e.split(';'))
