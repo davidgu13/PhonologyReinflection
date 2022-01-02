@@ -106,7 +106,9 @@ def hun_clean_sample(x:str) -> str:
     # the " |or| " is a bug of the scraping from Wiktionary. It can appear at the end of a form
     # (search in the data for "jósolj|or|") or between 2 forms (search for "jóslok |or| jósolok").
     # There are also pipes ("|"), alone or preceded by a space " |".
-    x = x.replace(','+','.join(" |or| "), "").replace(", ,|", "").replace(",|", "")
+    # The input is in format of ','.join(input), so the cleaning patterns follow this method.
+    patterns = [','+','.join(" |or| "), ','+','.join("|or|"), ", ,|", ",|"]
+    for p in patterns: x = x.replace(p, "")
     return x
 hun_components = [hun_g2p_dict, hun_word2phonemes, hun_phonemes2word, hun_clean_sample]
 # endregion Hungarian - hun
