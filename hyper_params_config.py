@@ -4,7 +4,7 @@ data_types = {'g': 'graphemes', 'p': 'phonemes', 'f': 'features'}
 
 # region HPs
 # Training hyperparameters
-num_epochs = 3 # orignal=50. Note: must be >1 !!!
+num_epochs = 50 # orignal=50. Note: must be >1 !!!
 learning_rate = 3e-4
 batch_size = 32 # original=32
 LR_patience = 6
