@@ -2,7 +2,13 @@ import os
 from more_itertools import flatten
 from languages_setup import langPhonology, LanguageSetup, joinit
 from data2samples_converter import Data2SamplesConverter
-from hyper_params_config import analogy_type, training_mode, inp_phon_type, out_phon_type, POS, PHON_USE_ATTENTION
+from hyper_params_config import lang, analogy_type, training_mode, inp_phon_type, out_phon_type, POS, PHON_USE_ATTENTION
+
+def is_features_bundle(e):
+    if lang == 'kat':
+        return POS in e # in Georgian there exist features like 's1', 'oPL' etc.
+    else:
+        return str.isupper(e) and POS in e # assuming no lower-case features exist in other languages.
 
 def remove_double_dollars(sequence:[str]):
     # used during the conversion to graphemes-mode
@@ -34,7 +40,7 @@ class GenericPhonologyProcessing(Data2SamplesConverter):
         if not convert_src: new_src_list = src_list
         else:
             src_list = src_list.split(',+,')
-            src_list, new_src_list = [e.replace(',',';') if str.isupper(e) and POS in e else e.replace(',','') for e in src_list], []
+            src_list, new_src_list = [e.replace(',',';') if is_features_bundle(e) else e.replace(',','') for e in src_list], []
             for i,e in enumerate(src_list):
                 if ';' in e:
                     new_src_list.append(e.split(';'))
