@@ -37,7 +37,8 @@ def get_time_now_str(allow_colon:bool):
     s = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     return s if allow_colon else s.replace(':', '')
 time_stamp = get_time_now_str(allow_colon=False) # the time when the run started
-user_params_with_time_stamp = f"{time_stamp}_{user_params_config}"
+user_params_with_time_stamp = f"{time_stamp}_{user_params_config}" # the ID of this run (more specific than time_stamp),
+# unique unless if 2 identical runs are started at the same time
 
 # region output files
 evaluation_graphs_file = join(evaluation_graphs_folder, f"EvaluationGraph_{user_params_with_time_stamp}.png")

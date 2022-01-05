@@ -9,7 +9,7 @@ from hyper_params_config import training_mode, inp_phon_type, out_phon_type, PHO
     learning_rate, batch_size, LR_patience, LR_factor, encoder_embedding_size, decoder_embedding_size, hidden_size, \
     num_layers, enc_dropout, dec_dropout
 from run_setup import train_file, dev_file, model_checkpoints_folder, model_checkpoint_file, predictions_file, \
-    hyper_params_to_print, summary_writer, evaluation_graphs_file, get_time_now_str, time_stamp, printF
+    hyper_params_to_print, summary_writer, evaluation_graphs_file, get_time_now_str, user_params_with_time_stamp, printF
 from utils import translate_sentence, bleu, save_checkpoint, load_checkpoint, srcField, trgField, device, plt, editDistance
 from analogies_phonology_preprocessing import combined_phonology_processor
 from network import Encoder, Decoder, Seq2Seq
@@ -157,8 +157,8 @@ def main():
                 if accuracy_morph > max_morph_acc:
                     max_morph_acc = accuracy_morph
                     best_measures = [ED_phon, accuracy_phon, ED_morph, accuracy_morph, epoch] if PHON_REEVALUATE else [ED_morph, accuracy_morph, epoch]
-                    assert len([f for f in os.listdir(model_checkpoints_folder) if time_stamp in f]) == 1
-                    ckpt_to_delete = [os.path.join(model_checkpoints_folder, f) for f in os.listdir(model_checkpoints_folder) if time_stamp in f][0]
+                    assert len([f for f in os.listdir(model_checkpoints_folder) if user_params_with_time_stamp in f]) == 1
+                    ckpt_to_delete = [os.path.join(model_checkpoints_folder, f) for f in os.listdir(model_checkpoints_folder) if user_params_with_time_stamp in f][0]
                     temp_ckpt_name = model_checkpoint_file.replace('Model_Checkpoint',f'Model_Checkpoint_{epoch}')
                     save_checkpoint(model, optimizer, filename=temp_ckpt_name, file_to_delete=ckpt_to_delete)
                 else: printF(f"Checkpoint didn't change. Current best (Accuracy={max_morph_acc}) achieved at epoch {best_measures[-1]}")
@@ -167,7 +167,7 @@ def main():
 
     # Load the best checkpoint and apply it on the dev set one last time. Report the results and make sure they are equal to best_measures.
     printF("Loading the best model")
-    best_model_checkpoint_file = [os.path.join(model_checkpoints_folder, f) for f in os.listdir(model_checkpoints_folder) if time_stamp in f][0]
+    best_model_checkpoint_file = [os.path.join(model_checkpoints_folder, f) for f in os.listdir(model_checkpoints_folder) if user_params_with_time_stamp in f][0]
     load_checkpoint(load(best_model_checkpoint_file), model, optimizer)
     printF("Applying model on validation set")
     if PHON_REEVALUATE:
