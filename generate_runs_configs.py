@@ -50,13 +50,37 @@ atten_modes = ['--ATTN', '']
 if __name__ == '__main__':
     from os.path import join
     # Group #1
-    # file_name = join("runs_scripts", 'kat-V_N-and-fin-ADJ-None-42.sh')
-    # generate_lang_pos_group_run(file_name, 'kat', 'V')
-    # generate_lang_pos_group_run(file_name, 'kat', 'N')
-    # generate_lang_pos_group_run(file_name, 'fin', 'ADJ')
+    # file_name1 = join("runs_scripts", 'kat-V_N-and-fin-ADJ-None-42.sh')
+    # generate_lang_pos_group_run(file_name1, 'kat', 'V')
+    # generate_lang_pos_group_run(file_name1, 'kat', 'N')
+    # generate_lang_pos_group_run(file_name1, 'fin', 'ADJ')
 
     # Group #2
-    file_name = join("runs_scripts", 'swc-V_ADJ-and-fin-V-None-42.sh')
-    generate_lang_pos_group_run(file_name, 'swc', 'V')
-    generate_lang_pos_group_run(file_name, 'swc', 'ADJ')
-    generate_lang_pos_group_run(file_name, 'fin', 'V')
+    # file_name2 = join("runs_scripts", 'swc-V_ADJ-and-fin-V-None-42.sh')
+    # generate_lang_pos_group_run(file_name2, 'swc', 'V')
+    # generate_lang_pos_group_run(file_name2, 'swc', 'ADJ')
+    # generate_lang_pos_group_run(file_name2, 'fin', 'V')
+
+    # Group 3
+    # file_name3 = join("runs_scripts", 'sqi-V_ADJ-and-hun-V-None-42.sh')
+    # generate_lang_pos_group_run(file_name3, 'sqi', 'V')
+    # generate_lang_pos_group_run(file_name3, 'hun', 'V')
+
+    # Group 4
+    file_name4 = join("runs_scripts", 'bul-V_ADJ-None-42.sh')
+    generate_lang_pos_group_run(file_name4, 'bul', 'V')
+    generate_lang_pos_group_run(file_name4, 'bul', 'ADJ')
+
+    # Group 5
+    file_name5 = join("runs_scripts", 'lav-V_N-None-42.sh')
+    generate_lang_pos_group_run(file_name5, 'lav', 'V')
+    generate_lang_pos_group_run(file_name5, 'lav', 'N')
+
+    # Group 6
+    file_name6 = join("runs_scripts", 'tur-V_N-None-42.sh')
+    generate_lang_pos_group_run(file_name6, 'tur', 'V')
+    generate_lang_pos_group_run(file_name6, 'tur', 'N')
+
+    # Group 7 # run tommorow morning!
+    file_name7 = join("runs_scripts", 'fin-N-None-42.sh')
+    generate_lang_pos_group_run(file_name7, 'fin', 'N')
