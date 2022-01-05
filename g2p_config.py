@@ -199,7 +199,7 @@ def fin_phonemes2word(phonemes:[str]):
     result = list(''.join(result).replace('x','ks'))
     return result
 def fin_clean_sample(x:str) -> str:
-    return x.replace('\xa0', ' ')
+    return x.replace('\xa0', ' ').replace(":", "")
 fin_components = [fin_g2p_dict, fin_word2phonemes, fin_phonemes2word, fin_clean_sample]
 # endregion Finnish - fin
 # endregion definedLangs
