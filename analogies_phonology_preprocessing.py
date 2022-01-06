@@ -39,9 +39,9 @@ class GenericPhonologyProcessing(Data2SamplesConverter):
         """
         if not convert_src: new_src_list = src_list
         else:
-            src_list = src_list.split(',+,')
-            src_list, new_src_list = [e.replace(',',';') if is_features_bundle(e) else e.replace(',','') for e in src_list], []
-            for i,e in enumerate(src_list):
+            src_list_split = src_list.split(',+,')
+            src_list_separated, new_src_list = [e.replace(',',';') if is_features_bundle(e) else e.replace(',','') for e in src_list_split], []
+            for i,e in enumerate(src_list_separated):
                 if ';' in e:
                     new_src_list.append(e.split(';'))
                 else:
