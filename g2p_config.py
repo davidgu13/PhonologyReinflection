@@ -9,7 +9,7 @@ height = ['open', 'open-mid', 'mid', 'close-mid', 'close'] # 22-26
 backness = ['front', 'back', 'central'] # 27-29
 roundness = ['rounded', 'unrounded'] # 30-31
 length = ['long'] # only for vowels; no occurence means short vowel # 32
-punctuations = [' ', '-', "'", "̇", '.', '#'] # 33-38, '#' is for predictions of non-existent feature bundles (see languages_setup.py)
+punctuations = [' ', '-', "'", "̇", '.', '#', '?'] # 33-38, '#' is for predictions of non-existent feature bundles (see languages_setup.py)
 
 phon_features = place + manner + voice + height + backness + roundness + length + punctuations
 idx2feature = dict(enumerate(phon_features))
@@ -69,7 +69,7 @@ lav_p2g_dict = {**dict(zip(lav_phonemes, lav_alphabet)), **punctuations_g2p_dict
 def lav_phonemes2word(phonemes:[str]):
     return phonemes2graphemes_with_doubles(phonemes, lang='lav')
 def lav_clean_sample(x:str) -> str:
-    return x.replace('í', 'ī') # replace the 3 occurences of 'í' with 'ī'.
+    return x.replace('í', 'ī').replace('ŗ', 'r') # replace the 3 occurences of 'í' with 'ī', and the 28 occ. of 'ŗ'
 lav_components = [lav_g2p_dict, None, lav_phonemes2word, lav_clean_sample]
 # endregion Latvian - lav
 
@@ -107,8 +107,8 @@ def hun_clean_sample(x:str) -> str:
     # (search in the data for "jósolj|or|") or between 2 forms (search for "jóslok |or| jósolok").
     # There are also pipes ("|"), alone or preceded by a space " |".
     # The input is in format of ','.join(input), so the cleaning patterns follow this method.
-    patterns = [','+','.join(" |or| "), ','+','.join("|or|"), ", ,|", ",|"]
-    for p in patterns: x = x.replace(p, "")
+    chars_to_remove = [','+','.join(" |or| "), ','+','.join("|or|"), ", ,|", ",|"]
+    for p in chars_to_remove: x = x.replace(p, "")
     return x
 hun_components = [hun_g2p_dict, hun_word2phonemes, hun_phonemes2word, hun_clean_sample]
 # endregion Hungarian - hun
@@ -175,7 +175,9 @@ def tur_phonemes2word(phonemes:[str]):
         graphemes.extend(g if type(g)==list else [g])
         i += 1
     return graphemes
-tur_components = [tur_g2p_dict, tur_word2phonemes, tur_phonemes2word, None]
+def tur_clean_sample(x:str) -> str:
+    return x.replace('İ', 'i')
+tur_components = [tur_g2p_dict, tur_word2phonemes, tur_phonemes2word, tur_clean_sample]
 # endregion Turkish - tur
 
 
@@ -199,7 +201,10 @@ def fin_phonemes2word(phonemes:[str]):
     result = list(''.join(result).replace('x','ks'))
     return result
 def fin_clean_sample(x:str) -> str:
-    return x.replace('\xa0', ' ').replace(":", "")
+    chars_to_remove = ['\xa0', ":", "/"]
+    for p in chars_to_remove: x = x.replace(p, "")
+    x = x.replace("á", "a").replace("â", "a").replace("û", "u").replace("ü", "u")
+    return x
 fin_components = [fin_g2p_dict, fin_word2phonemes, fin_phonemes2word, fin_clean_sample]
 # endregion Finnish - fin
 # endregion definedLangs
@@ -279,3 +284,13 @@ def are_there_phonemes_unincluded_intheJSON(lang_phonemes:[str]) -> [str]: retur
 #     d[k]=v
 #     k,v = input("insert k"), input("insert v")
 # endregion manually inserting g-p pairs:
+# region analyze characters in the data
+# def analyze_characters_in_data(lang):
+#     from os.path import join
+#     vocab = list(set(list(open(join(".data", "RawData", f"{lang}.txt"), encoding='utf8').read())))
+#     vocab.sort()
+#     print(f'Characters in {lang} data:')
+#     print(vocab, '\n')
+# for l in ['kat', 'swc', 'sqi', 'lav', 'bul', 'hun', 'tur', 'fin']:
+#     analyze_characters_in_data(l)
+# endregion analyze characters in the data
