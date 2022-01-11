@@ -3,7 +3,7 @@ from more_itertools import flatten
 from languages_setup import langPhonology, LanguageSetup, joinit
 from data2samples_converter import Data2SamplesConverter
 from hyper_params_config import lang, analogy_type, training_mode, inp_phon_type, out_phon_type, POS, PHON_USE_ATTENTION
-
+inp_phon_type = 'features'
 def is_features_bundle(e):
     if lang == 'kat':
         return POS in e # in Georgian there exist features like 's1', 'oPL' etc.
@@ -89,7 +89,7 @@ class GenericPhonologyProcessing(Data2SamplesConverter):
         assert inp_mode in {'graphemes', 'phonemes', 'features'} and out_mode in {'graphemes', 'phonemes', 'features'}
         # Handle source
         if inp_mode=='graphemes':
-            new_src = [e.replace(',',';' if POS in e else '') for e in ','.join(src).split(',+,')]
+            new_src = [e.replace(',',';' if is_features_bundle(e) else '') for e in ','.join(src).split(',+,')]
         else: # 'phonemes' or 'features'
             src = ','.join(src)
             new_src = self._phon_src2word_src_generic(src)
@@ -113,10 +113,15 @@ class GenericPhonologyProcessing(Data2SamplesConverter):
 combined_phonology_processor = GenericPhonologyProcessing(langPhonology)
 
 if __name__ == '__main__':
-    old_dir = os.path.join(".data","AnalogiesData","src1_cross1")
-    orig_trn_file, orig_dev_file, orig_tst_file = [f"{training_mode}sp.schema2.{e}_{analogy_type}.tsv" for e in ['train', 'dev', 'test']]
-    fn = os.path.join(old_dir,orig_tst_file)
+    old_dir = os.path.join(".data", "Old Georgian Data", "AnalogiesData","src1_cross1")
+    analogy_type = 'src1_cross1' # remove when finished debugging!
+
+    trn_file, dev_file, tst_file = [f"{training_mode}sp.schema2.{e}_{analogy_type}.tsv" for e in ['train', 'dev', 'test']]
+    fn = os.path.join(old_dir, tst_file)
     lines = open(fn,encoding='utf8').readlines()
-    for l in lines:
-        src, trg = l.strip().split('\t')
-        new_src, new_trg = combined_phonology_processor.line2phon_line_generic(src, trg)
+    for i, l in enumerate(lines):
+        if i < 20:
+            src, trg = l.strip().split('\t')
+            new_src, new_trg = combined_phonology_processor.line2phon_line_generic(src, trg)
+            print(f"src: {src}, trg: {trg}")
+            print(f"new_src: {new_src}, new_trg: {new_trg}\n")
