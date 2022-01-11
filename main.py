@@ -11,12 +11,12 @@ from hyper_params_config import training_mode, inp_phon_type, out_phon_type, PHO
 from run_setup import train_file, dev_file, model_checkpoints_folder, model_checkpoint_file, predictions_file, \
     hyper_params_to_print, summary_writer, evaluation_graphs_file, get_time_now_str, user_params_with_time_stamp, printF
 from utils import translate_sentence, bleu, save_checkpoint, load_checkpoint, srcField, trgField, device, plt, editDistance
-from analogies_phonology_preprocessing import combined_phonology_processor
+from analogies_phonology_preprocessing import combined_phonology_processor, is_features_bundle
 from network import Encoder, Decoder, Seq2Seq
 
 def show_readable_triplet(src, trg, pred):
     # Presents the triplet in a more tidy way (no converting)
-    src_print = [e.replace(',',';' if POS in e else ',' if inp_phon_type=='features' else '') for e in ','.join(src).split(',+,')]
+    src_print = [e.replace(',',';' if is_features_bundle(e) else ',' if inp_phon_type=='features' else '') for e in ','.join(src).split(',+,')]
     trg_print, pred_print = (','.join(trg), ','.join(pred)) if out_phon_type=='features' else (''.join(trg), ''.join(pred))
     return src_print, trg_print, pred_print
 

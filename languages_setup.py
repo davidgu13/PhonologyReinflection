@@ -131,7 +131,7 @@ if debugging_mode:
     PHON_USE_ATTENTION, lang = False, 'fin'
 else:
     from hyper_params_config import PHON_USE_ATTENTION, lang
-MAX_FEAT_SIZE = max([len(p2f_dict[p]) for p in langs_properties[lang][0].values() if p in p2f_dict]) # only composite phonemes don't appear in that list
+MAX_FEAT_SIZE = max([len(p2f_dict[p]) for p in langs_properties[lang][0].values() if p in p2f_dict]) # composite phonemes aren't counted in that list
 langPhonology = LanguageSetup(lang, langs_properties[lang][0], langs_properties[lang][1], langs_properties[lang][2])
 
 if __name__ == '__main__':

@@ -51,20 +51,20 @@ if __name__ == '__main__':
     from os.path import join
     # Group 1
     file_name1 = join("runs_scripts", 'kat-V_N-and-fin-ADJ-src1_cross1-42.sh')
-    generate_lang_pos_group_run(file_name1, 'kat', 'V', 42, 1)
-    generate_lang_pos_group_run(file_name1, 'kat', 'N', 42, 1)
-    generate_lang_pos_group_run(file_name1, 'fin', 'ADJ', 42, 1)
+    generate_lang_pos_group_run(file_name1, 'kat', 'V', 42, 1, 'src1_cross1')
+    generate_lang_pos_group_run(file_name1, 'kat', 'N', 42, 1, 'src1_cross1')
+    generate_lang_pos_group_run(file_name1, 'fin', 'ADJ', 42, 1, 'src1_cross1')
 
     # Group 2
     file_name2 = join("runs_scripts", 'swc-V_ADJ-and-fin-V-src1_cross1-42.sh')
-    generate_lang_pos_group_run(file_name2, 'swc', 'V', 42, 2)
-    generate_lang_pos_group_run(file_name2, 'swc', 'ADJ', 42, 2)
-    generate_lang_pos_group_run(file_name2, 'fin', 'V', 42, 2)
+    generate_lang_pos_group_run(file_name2, 'swc', 'V', 42, 2, 'src1_cross1')
+    generate_lang_pos_group_run(file_name2, 'swc', 'ADJ', 42, 2, 'src1_cross1')
+    generate_lang_pos_group_run(file_name2, 'fin', 'V', 42, 2, 'src1_cross1')
 
     # Group 3
     file_name3 = join("runs_scripts", 'sqi-V-and-hun-V-src1_cross1-42.sh')
-    generate_lang_pos_group_run(file_name3, 'sqi', 'V', 42, 3)
-    generate_lang_pos_group_run(file_name3, 'hun', 'V', 42, 3)
+    generate_lang_pos_group_run(file_name3, 'sqi', 'V', 42, 3, 'src1_cross1')
+    generate_lang_pos_group_run(file_name3, 'hun', 'V', 42, 3, 'src1_cross1')
 
     # # Group 4
     # file_name4 = join("runs_scripts", 'bul-V_ADJ-src1_cross1-42.sh')
@@ -84,3 +84,14 @@ if __name__ == '__main__':
     # # Group 7
     # file_name7 = join("runs_scripts", 'fin-N-src1_cross1-42.sh')
     # generate_lang_pos_group_run(file_name7, 'fin', 'N', 42, 3, 'src1_cross1')
+
+    def JSON_fix(lang, POS, idx):
+        f_name = join("runs_scripts", f"{lang}-{POS}-None.sh")
+        generate_lang_pos_group_run(f_name, lang, POS, 42, idx)
+        generate_lang_pos_group_run(f_name, lang, POS, 21, idx)
+        generate_lang_pos_group_run(f_name, lang, POS, 7, idx)
+
+    bul_V = join("runs_scripts", "bul-V-None.sh")
+    groups = [('bul', 'V'), ('bul', 'ADJ'), ('fin', 'V'), ('fin', 'N'), ('fin', 'ADJ')]
+    for i, (lang, pos) in enumerate(groups):
+        JSON_fix(lang, pos, i)
