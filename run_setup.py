@@ -15,9 +15,15 @@ user_params_config_to_print = f"""Run arguments configuration:
 - input_format = {inp_phon_type}, output_format = {out_phon_type}, phon_upgraded = {PHON_UPGRADED}, phon_self_attention = {PHON_USE_ATTENTION}
 - analogy_mode = {ANALOGY_MODE}{f", analogy_type = {analogy_type}" if ANALOGY_MODE else ''}"""
 
-train_file = join(".data", "Reinflection", f"{lang}.{POS}", f"{lang}.{POS}.{training_mode}.train.tsv")
-dev_file =   join(".data", "Reinflection", f"{lang}.{POS}", f"{lang}.{POS}.{training_mode}.dev.tsv")
-test_file =  join(".data", "Reinflection", f"{lang}.{POS}", f"{lang}.{POS}.{training_mode}.test.tsv") # used only in testing.py
+if analogy_type == 'None':
+    train_file = join(".data", "Reinflection", f"{lang}.{POS}", f"{lang}.{POS}.{training_mode}.train.tsv")
+    dev_file =   join(".data", "Reinflection", f"{lang}.{POS}", f"{lang}.{POS}.{training_mode}.dev.tsv")
+    test_file =  join(".data", "Reinflection", f"{lang}.{POS}", f"{lang}.{POS}.{training_mode}.test.tsv") # used only in testing.py
+else: # analogy_type == 'src1_cross1'
+    train_file = join(".data", "Reinflection", f"{lang}.{POS}", "src1_cross1", f"{lang}.{POS}.{training_mode}.train.src1_cross1.tsv")
+    dev_file =   join(".data", "Reinflection", f"{lang}.{POS}", "src1_cross1", f"{lang}.{POS}.{training_mode}.dev.src1_cross1.tsv")
+    test_file =  join(".data", "Reinflection", f"{lang}.{POS}", "src1_cross1", f"{lang}.{POS}.{training_mode}.test.src1_cross1.tsv") # used only in testing.py
+
 
 # region output folders
 resultsFolder = "Results"
