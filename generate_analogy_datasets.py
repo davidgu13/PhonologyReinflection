@@ -267,6 +267,7 @@ def validate_kat_V_dataset(training_mode, subset):
     print("Done")
 
 if __name__ == '__main__':
+    # Note: this file was not run on tur-N and swc-N, because they're not used later. Also, swc-N can't generate lemma-split.
     parser = ArgumentParser(description="Parse arguments for generating Analogy src1-cross1 datasets")
     parser.add_argument('lang', type=str, choices=['bul', 'fin', 'hun', 'kat', 'lav', 'sqi', 'swc', 'tur'], help="Language to be processed")
     parser.add_argument('POS', type=str, choices=['V','N','ADJ'], help="Part of speech to be processed")
