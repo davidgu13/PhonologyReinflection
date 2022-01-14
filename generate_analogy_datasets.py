@@ -186,32 +186,10 @@ class AnalogyFunctionality(Data2SamplesConverter):
                 new_samples[-1].append(new_sample)
         return new_samples
 
-    # region static writing methods
-    @staticmethod
-    def _source_2_reinflection(line: ([str], str)) ->  ([[str]], [str]):
-        (src_feat, src_form, aux_feat, aux_form, trg_feat), trg_form = line
-        # return [src_feat.split(";"), list(src_form), aux_feat.split(";"), list(aux_form), trg_feat.split(";")], list(trg_form)
-        return [spl_fe(src_feat), spl_fo(src_form), spl_fe(aux_feat), spl_fo(aux_form), spl_fe(trg_feat)], spl_fo(trg_form)
-
     @staticmethod
     def _cross1_reinflection(line: ([str], str)) ->  ([[str]], [str]):
         (src_feat, src_form, aux_src_form, aux_trg_form, trg_feat), trg_form = line
         return [spl_fe(src_feat), spl_fo(src_form), spl_fo(aux_src_form), spl_fo(aux_trg_form), spl_fe(trg_feat)], spl_fo(trg_form)
-
-    @staticmethod
-    def _cross2_reinflection(line: ([str], str)) ->  ([[str]], [str]):
-        (src_feat, src_form, aux1_src_form, aux1_trg_form, aux2_src_form, aux2_trg_form, trg_feat), trg_form = line
-        return [spl_fe(src_feat), spl_fo(src_form), spl_fo(aux1_src_form), spl_fo(aux1_trg_form), spl_fo(aux2_src_form), spl_fo(aux2_trg_form), spl_fe(trg_feat)], spl_fo(trg_form)
-    # endregion static writing methods
-
-    # region static reading methods
-    @staticmethod
-    def _source_2_sample2data(src:[str], trg: [str]) -> ([[str]], str):
-        fe1, fo1, fe2, fo2, fe3 = ','.join(src).split(',+,')
-        fe1, fo1, fe2, fo2, fe3 = join_fe(fe1), join_fo(fo1), join_fe(fe2), join_fo(fo2), join_fe(fe3)
-        src = fe1, fo1, fe2, fo2, fe3
-        trg = ''.join(trg)
-        return src, trg
 
     @staticmethod
     def _cross1_sample2data(src:str, trg: str) -> ([[str]], str):
@@ -220,15 +198,6 @@ class AnalogyFunctionality(Data2SamplesConverter):
         src = fe1, fo1, fo2, fo3, fe2
         trg = ''.join(trg.split(','))
         return src, trg
-
-    @staticmethod
-    def _cross2_sample2data(src:[str], trg: [str]) -> ([[str]], str):
-        fe1, fo1, fo2, fo3, fo4, fo5, fe2 = ','.join(src).split(',+,')
-        fe1, fo1, fo2, fo3, fo4, fo5, fe2 = join_fe(fe1), join_fo(fo1), join_fo(fo2), join_fo(fo3), join_fo(fo4), join_fo(fo5), join_fe(fe2)
-        src = fe1, fo1, fo2, fo3, fo4, fo5, fe2
-        trg = ''.join(trg)
-        return src, trg
-    # endregion static reading methods
 
     def analogy_reinflection2TSV(self, original_dir, fn, data) -> str:
         # Encapsulating the automatic invoking of the parent method, but with different suffix and parsing method.

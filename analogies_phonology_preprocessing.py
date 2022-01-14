@@ -2,8 +2,8 @@ import os
 from more_itertools import flatten
 from languages_setup import langPhonology, LanguageSetup, joinit
 from data2samples_converter import Data2SamplesConverter
-from hyper_params_config import lang, analogy_type, training_mode, inp_phon_type, out_phon_type, POS, PHON_USE_ATTENTION
-inp_phon_type = 'features'
+from hyper_params_config import lang, training_mode, inp_phon_type, out_phon_type, POS, PHON_USE_ATTENTION
+
 def is_features_bundle(e):
     if lang == 'kat':
         return POS in e # in Georgian there exist features like 's1', 'oPL' etc.

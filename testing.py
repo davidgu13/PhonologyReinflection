@@ -9,8 +9,8 @@ from network import Encoder, Decoder, Seq2Seq
 from hyper_params_config import training_mode, out_phon_type, PHON_REEVALUATE, PHON_UPGRADED, ANALOGY_MODE,\
     analogy_type, learning_rate, encoder_embedding_size, decoder_embedding_size, hidden_size, \
     num_layers, enc_dropout, dec_dropout, SEED, data_types
-import hyper_params_config as hp
 from run_setup import train_file, dev_file, test_file, prediction_files_folder
+import hyper_params_config as hp
 
 
 def main(model_file):
