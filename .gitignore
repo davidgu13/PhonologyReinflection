@@ -5,6 +5,8 @@ Results/
 runs_scripts/
 .idea/
 *.sh
+extract_results_from_logs.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
