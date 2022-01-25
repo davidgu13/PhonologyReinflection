@@ -216,9 +216,9 @@ class AnalogyFunctionality(Data2SamplesConverter):
 
 
 def main():
-    original_dir = join(".data", "Reinflection", f"{lang}.{POS}")
+    original_dir = join("../.data", "Reinflection", f"{lang}.{POS}")
     analogies_dir = join(original_dir, analogy_type)
-    inflections_file = join(".data", "InflectionTables", f"{lang}.{POS}.txt")
+    inflections_file = join("../.data", "InflectionTables", f"{lang}.{POS}.txt")
     if not isdir(analogies_dir): mkdir(analogies_dir)
 
     print(f"Generating {analogy_type}-analogy datasets for {lang}.{POS}:")
@@ -236,9 +236,9 @@ def main():
 def validate_kat_V_dataset(training_mode, subset):
     # A short script for kat.V, that makes sure the chosen auxiliary lemmas are differet from the original ones.
     analogy_type = 'src1_cross1'
-    original_dir = join(".data", "Reinflection", f"{lang}.{POS}")
+    original_dir = join("../.data", "Reinflection", f"{lang}.{POS}")
     analogies_dir = join(original_dir, analogy_type)
-    inflections_file = join(".data", "InflectionTables", f"{lang}.{POS}.txt")
+    inflections_file = join("../.data", "InflectionTables", f"{lang}.{POS}.txt")
     original_files = [join(original_dir, f"{lang}.{POS}.{training_mode}.{e}.txt") for e in ['train', 'dev', 'test']]
 
     kat_analogies = AnalogyFunctionality(analogies_dir, inflections_file, *original_files)
