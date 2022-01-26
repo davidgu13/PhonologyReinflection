@@ -2,13 +2,13 @@ import os
 from more_itertools import flatten
 from languages_setup import langPhonology, LanguageSetup, joinit
 from data2samples_converter import Data2SamplesConverter
-from hyper_params_config import lang, training_mode, inp_phon_type, out_phon_type, POS, PHON_USE_ATTENTION
+import hyper_params_config as hp
 
 def is_features_bundle(e):
-    if lang == 'kat':
-        return POS in e # in Georgian there exist features like 's1', 'oPL' etc.
+    if hp.lang == 'kat':
+        return hp.POS in e # in Georgian there exist features like 's1', 'oPL' etc.
     else:
-        return str.isupper(e) and POS in e # assuming no lower-case features exist in other languages.
+        return str.isupper(e) and hp.POS in e # assuming no lower-case features exist in other languages.
 
 def remove_double_dollars(sequence:[str]):
     # used during the conversion to graphemes-mode
@@ -45,13 +45,13 @@ class GenericPhonologyProcessing(Data2SamplesConverter):
                 if ';' in e:
                     new_src_list.append(e.split(';'))
                 else:
-                    new_src_list.append(self.phonology_obj.word2phonemes(e, mode=inp_phon_type))
+                    new_src_list.append(self.phonology_obj.word2phonemes(e, mode=hp.inp_phon_type))
             new_src_list = list(flatten( joinit(new_src_list,['+']) ))
 
         if not convert_trg: new_trg_form = trg_form
         else:
             trg_form = trg_form.replace(',','')
-            new_trg_form = self.phonology_obj.word2phonemes(trg_form, mode=out_phon_type)
+            new_trg_form = self.phonology_obj.word2phonemes(trg_form, mode=hp.out_phon_type)
         return new_src_list, new_trg_form
 
 
@@ -60,7 +60,7 @@ class GenericPhonologyProcessing(Data2SamplesConverter):
         assert mode in {'features', 'phonemes'}
         if mode=='features': # type(sequence)==str
             phon_feats = sequence.split(',$,') # cannot handle more than 2 following '$' chars in a row. Not an issue for now.
-            if self.phonology_obj.manual_phonemes2word and PHON_USE_ATTENTION:
+            if self.phonology_obj.manual_phonemes2word and hp.PHON_USE_ATTENTION:
                 new_sequence = self.phonology_obj.phonemes2word([e.split(',')[-1] for e in phon_feats], mode='phonemes')
             else:
                 new_sequence = self.phonology_obj.phonemes2word([p.split(',') for p in phon_feats], mode='features')
@@ -84,7 +84,7 @@ class GenericPhonologyProcessing(Data2SamplesConverter):
 
 
     def phon_elements2morph_elements_generic(self, src:[str], trg:[str], pred:[str],
-                     inp_mode:str=inp_phon_type, out_mode:str=out_phon_type) -> ([str], str, str):
+                     inp_mode:str=hp.inp_phon_type, out_mode:str=hp.out_phon_type) -> ([str], str, str):
         # Convert the source, target & prediction elements (if needed)
         assert inp_mode in {'graphemes', 'phonemes', 'features'} and out_mode in {'graphemes', 'phonemes', 'features'}
         # Handle source

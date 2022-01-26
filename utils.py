@@ -7,23 +7,23 @@ from copy import deepcopy
 from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
 
-from hyper_params_config import SEED, inp_phon_type, out_phon_type, device_idx, lang
+import hyper_params_config as hp
 from run_setup import get_time_now_str, printF
 from analogies_phonology_preprocessing import combined_phonology_processor, GenericPhonologyProcessing
 from languages_setup import MAX_FEAT_SIZE, langs_properties
 
-device = torch.device(f"cuda:{device_idx}" if torch.cuda.is_available() else "cpu")
-torch.manual_seed(SEED)
+device = torch.device(f"cuda:{hp.device_idx}" if torch.cuda.is_available() else "cpu")
+torch.manual_seed(hp.SEED)
 
 src_tokenizer = lambda x: x.split(',')
 trg_tokenizer = lambda x: x.split(',')
 
-# These are preprocessing methods that convert the data to the formats required by inp_phon_type & out_phon_type.
+# These are preprocessing methods that convert the data to the formats required by hp.inp_phon_type & hp.out_phon_type.
 # Also, preprocessing of g-g reinflection (the standard variation) is supported, to maintain consistency.
 def phon_extended_src_preprocess(x: [str]) -> [str]:
     # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
-    x = langs_properties[lang][3](','.join(x)).split(',') # clean the data
-    if inp_phon_type=='graphemes':
+    x = langs_properties[hp.lang][3](','.join(x)).split(',') # clean the data
+    if hp.inp_phon_type=='graphemes':
         return x # do nothing
     else:
         new_x, _ = combined_phonology_processor.line2phon_line_generic(','.join(x), '', convert_trg=False)
@@ -31,8 +31,8 @@ def phon_extended_src_preprocess(x: [str]) -> [str]:
 
 def phon_extended_trg_preprocess(x: [str]) -> [str]:
     # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
-    x = langs_properties[lang][3](','.join(x)).split(',')
-    if out_phon_type=='graphemes':
+    x = langs_properties[hp.lang][3](','.join(x)).split(',')
+    if hp.out_phon_type=='graphemes':
         return x # do nothing
     else:
         _, new_x = combined_phonology_processor.line2phon_line_generic('', ','.join(x), convert_src=False)

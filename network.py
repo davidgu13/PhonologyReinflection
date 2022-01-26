@@ -1,9 +1,9 @@
 import torch.nn as nn
 from utils import torch, srcField, trgField, device, get_abs_offsets, postprocessBatch
 import random
-from hyper_params_config import PHON_UPGRADED, PHON_USE_ATTENTION, SEED
+import hyper_params_config as hp
 from languages_setup import MAX_FEAT_SIZE
-torch.manual_seed(SEED)
+torch.manual_seed(hp.SEED)
 
 def print_readable_tensor(x): print([srcField.vocab.itos[i] for i in x]) # used for debugging purposes
 
@@ -17,7 +17,7 @@ class Encoder(nn.Module):
 
         self.input_size=input_size
         self.embedding_size = embedding_size
-        if PHON_USE_ATTENTION:
+        if hp.PHON_USE_ATTENTION:
                 self.phon_selfAttention = nn.MultiheadAttention(self.embedding_size, num_heads=2)
                 # https://lena-voita.github.io/nlp_course/seq2seq_and_attention.html - a useful explanation of self-attention
         self.rnn = nn.LSTM(embedding_size, hidden_size, num_layers, bidirectional=True)
@@ -30,15 +30,15 @@ class Encoder(nn.Module):
         # x: (seq_length, N) where N is batch size
 
         embedding = self.embedding(x)
-        if PHON_UPGRADED:
+        if hp.PHON_UPGRADED:
             phon_delim, pad_idx = [srcField.vocab.stoi[e] for e in ['$','<pad>']]
             iter_embeds = embedding.permute(1,0,2)
             new_embs = []
 
             for i,seq in enumerate(x.t()): # iterating over the batch samples
                 mat = iter_embeds[i]
-                abs_offsets = get_abs_offsets(seq, phon_delim, phon_max_len=MAX_FEAT_SIZE+1 if PHON_USE_ATTENTION else MAX_FEAT_SIZE)
-                if PHON_USE_ATTENTION:
+                abs_offsets = get_abs_offsets(seq, phon_delim, phon_max_len=MAX_FEAT_SIZE+1 if hp.PHON_USE_ATTENTION else MAX_FEAT_SIZE)
+                if hp.PHON_USE_ATTENTION:
                     res_vecs, vecs_indices = [], torch.cat([torch.arange(o,o+MAX_FEAT_SIZE+1) for o in abs_offsets], dim=0)
                     phon_vecs = mat[vecs_indices] # get all the phonological vector-triplets and assign them to phon_vecs
                     vec_triplets = torch.split(phon_vecs, MAX_FEAT_SIZE+1, dim=0) # splitting to a tuple of triplets

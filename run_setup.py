@@ -2,27 +2,26 @@
 from os import mkdir
 from os.path import join, isdir
 from torch.utils.tensorboard import SummaryWriter  # to print to tensorboard
-from hyper_params_config import lang, POS, training_mode, inp_phon_type, out_phon_type, analogy_type, SEED, device_idx,\
-    PHON_USE_ATTENTION, PHON_UPGRADED, ANALOGY_MODE
-from hyper_params_config import num_epochs, learning_rate, batch_size, encoder_embedding_size, decoder_embedding_size, hidden_size
 
-user_params_config = f"{lang}_{POS}_{training_mode}_{inp_phon_type[0]}_{out_phon_type[0]}_{analogy_type}_{SEED}" \
-                     f"_{device_idx}{'_attn' if PHON_USE_ATTENTION else ''}" # used below for files naming
+import hyper_params_config as hp
+
+user_params_config = f"{hp.lang}_{hp.POS}_{hp.training_mode}_{hp.inp_phon_type[0]}_{hp.out_phon_type[0]}_{hp.analogy_type}_{hp.SEED}" \
+                     f"_{hp.device_idx}{'_attn' if hp.PHON_USE_ATTENTION else ''}" # used below for files naming
 
 user_params_config_to_print = f"""Run arguments configuration:
-- language = {lang}, part-of-speech = {POS}
-- split-type = {training_mode}
-- input_format = {inp_phon_type}, output_format = {out_phon_type}, phon_upgraded = {PHON_UPGRADED}, phon_self_attention = {PHON_USE_ATTENTION}
-- analogy_mode = {ANALOGY_MODE}{f", analogy_type = {analogy_type}" if ANALOGY_MODE else ''}"""
+- language = {hp.lang}, part-of-speech = {hp.POS}
+- split-type = {hp.training_mode}
+- input_format = {hp.inp_phon_type}, output_format = {hp.out_phon_type}, phon_upgraded = {hp.PHON_UPGRADED}, phon_self_attention = {hp.PHON_USE_ATTENTION}
+- analogy_mode = {hp.ANALOGY_MODE}{f", analogy_type = {hp.analogy_type}" if hp.ANALOGY_MODE else ''}"""
 
-if analogy_type == 'None':
-    train_file = join(".data", "Reinflection", f"{lang}.{POS}", f"{lang}.{POS}.{training_mode}.train.tsv")
-    dev_file =   join(".data", "Reinflection", f"{lang}.{POS}", f"{lang}.{POS}.{training_mode}.dev.tsv")
-    test_file =  join(".data", "Reinflection", f"{lang}.{POS}", f"{lang}.{POS}.{training_mode}.test.tsv") # used only in testing.py
-else: # analogy_type == 'src1_cross1'
-    train_file = join(".data", "Reinflection", f"{lang}.{POS}", "src1_cross1", f"{lang}.{POS}.{training_mode}.train.src1_cross1.tsv")
-    dev_file =   join(".data", "Reinflection", f"{lang}.{POS}", "src1_cross1", f"{lang}.{POS}.{training_mode}.dev.src1_cross1.tsv")
-    test_file =  join(".data", "Reinflection", f"{lang}.{POS}", "src1_cross1", f"{lang}.{POS}.{training_mode}.test.src1_cross1.tsv") # used only in testing.py
+if hp.analogy_type == 'None':
+    train_file = join(".data", "Reinflection", f"{hp.lang}.{hp.POS}", f"{hp.lang}.{hp.POS}.{hp.training_mode}.train.tsv")
+    dev_file =   join(".data", "Reinflection", f"{hp.lang}.{hp.POS}", f"{hp.lang}.{hp.POS}.{hp.training_mode}.dev.tsv")
+    test_file =  join(".data", "Reinflection", f"{hp.lang}.{hp.POS}", f"{hp.lang}.{hp.POS}.{hp.training_mode}.test.tsv") # used only in testing.py
+else: # hp.analogy_type == 'src1_cross1'
+    train_file = join(".data", "Reinflection", f"{hp.lang}.{hp.POS}", "src1_cross1", f"{hp.lang}.{hp.POS}.{hp.training_mode}.train.src1_cross1.tsv")
+    dev_file =   join(".data", "Reinflection", f"{hp.lang}.{hp.POS}", "src1_cross1", f"{hp.lang}.{hp.POS}.{hp.training_mode}.dev.src1_cross1.tsv")
+    test_file =  join(".data", "Reinflection", f"{hp.lang}.{hp.POS}", "src1_cross1", f"{hp.lang}.{hp.POS}.{hp.training_mode}.test.src1_cross1.tsv") # used only in testing.py
 
 
 # region output folders
@@ -65,12 +64,12 @@ Loss & Accuracy graph file: {evaluation_graphs_file}
 Best model's folder: {model_checkpoints_folder}
 """)
 
-hyper_params_to_print = f"""#epochs = {num_epochs},
-lr = {learning_rate},
-batch = {batch_size},
-encoder_embed_size = {encoder_embedding_size},
-decoder_embed_size = {decoder_embedding_size},
-hidden_size = {hidden_size},
+hyper_params_to_print = f"""#epochs = {hp.num_epochs},
+lr = {hp.learning_rate},
+batch = {hp.batch_size},
+encoder_embed_size = {hp.encoder_embedding_size},
+decoder_embed_size = {hp.decoder_embedding_size},
+hidden_size = {hp.hidden_size},
 time_stamp = {time_stamp}"""
 
 printF(f"- Hyper-Params: {hyper_params_to_print}")

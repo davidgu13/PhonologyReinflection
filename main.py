@@ -5,9 +5,8 @@ import torch.optim as optim
 from torch.nn import CrossEntropyLoss
 from torch.nn.utils import clip_grad_norm_
 from torchtext.legacy.data import BucketIterator, TabularDataset
-from hyper_params_config import training_mode, inp_phon_type, out_phon_type, PHON_REEVALUATE, SEED, POS, num_epochs, \
-    learning_rate, batch_size, LR_patience, LR_factor, encoder_embedding_size, decoder_embedding_size, hidden_size, \
-    num_layers, enc_dropout, dec_dropout
+
+import hyper_params_config as hp
 from run_setup import train_file, dev_file, model_checkpoints_folder, model_checkpoint_file, predictions_file, \
     hyper_params_to_print, summary_writer, evaluation_graphs_file, get_time_now_str, user_params_with_time_stamp, printF
 from utils import translate_sentence, bleu, save_checkpoint, load_checkpoint, srcField, trgField, device, plt, editDistance
@@ -16,15 +15,15 @@ from network import Encoder, Decoder, Seq2Seq
 
 def show_readable_triplet(src, trg, pred):
     # Presents the triplet in a more tidy way (no converting)
-    src_print = [e.replace(',',';' if is_features_bundle(e) else ',' if inp_phon_type=='features' else '') for e in ','.join(src).split(',+,')]
-    trg_print, pred_print = (','.join(trg), ','.join(pred)) if out_phon_type=='features' else (''.join(trg), ''.join(pred))
+    src_print = [e.replace(',',';' if is_features_bundle(e) else ',' if hp.inp_phon_type=='features' else '') for e in ','.join(src).split(',+,')]
+    trg_print, pred_print = (','.join(trg), ','.join(pred)) if hp.out_phon_type=='features' else (''.join(trg), ''.join(pred))
     return src_print, trg_print, pred_print
 
 def main():
     # Note: the arguments parsing occurs globally at hyper_params_config.py
     t0=time.time()
-    random.seed(SEED)
-    manual_seed(SEED) # torch.manual_seed
+    random.seed(hp.SEED)
+    manual_seed(hp.SEED) # torch.manual_seed
     save_model = True
     summary_writer_step = 0
 
@@ -39,7 +38,7 @@ def main():
     printF("- Generating BucketIterator objects")
     train_iterator, dev_iterator = BucketIterator.splits(
         (train_data, dev_data),
-        batch_size=batch_size,
+        batch_size=hp.batch_size,
         sort_within_batch=True,
         sort_key= lambda x: len(x.src),
         device=device
@@ -51,14 +50,14 @@ def main():
 
     # region defineNets
     printF("- Constructing networks & optimizer")
-    encoder_net = Encoder(input_size_encoder, encoder_embedding_size, hidden_size, num_layers, enc_dropout).to(device)
-    decoder_net = Decoder(input_size_decoder, decoder_embedding_size, hidden_size, output_size, num_layers, dec_dropout,).to(device)
+    encoder_net = Encoder(input_size_encoder, hp.encoder_embedding_size, hp.hidden_size, hp.num_layers, hp.enc_dropout).to(device)
+    decoder_net = Decoder(input_size_decoder, hp.decoder_embedding_size, hp.hidden_size, output_size, hp.num_layers, hp.dec_dropout,).to(device)
     model = Seq2Seq(encoder_net, decoder_net).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = optim.Adam(model.parameters(), lr=hp.learning_rate)
 
     printF("- Defining some more stuff...")
     criterion = CrossEntropyLoss(ignore_index=srcField.vocab.stoi["<pad>"]) # '<pad>''s index
-    lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=LR_patience, verbose=True, factor=LR_factor) # mode='max' bc we want to maximize the accuracy
+    lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=hp.LR_patience, verbose=True, factor=hp.LR_factor) # mode='max' bc we want to maximize the accuracy
     # endregion defineNets
 
     indices = random.sample(range(len(dev_data)), k=10)
@@ -67,8 +66,8 @@ def main():
     max_morph_acc, ED_phon, accuracy_phon, ED_morph, accuracy_morph = -0.001, -0.001, -0.001, -0.001, -0.001
 
     printF("Let's begin training!\n")
-    for epoch in range(1, num_epochs + 1):
-        printF(f"[Epoch {epoch} / {num_epochs}] (hyper-params: {hyper_params_to_print})")
+    for epoch in range(1, hp.num_epochs + 1):
+        printF(f"[Epoch {epoch} / {hp.num_epochs}] (hyper-params: {hyper_params_to_print})")
         printF(f"lr = {optimizer.state_dict()['param_groups'][0]['lr']:.7f}")
         model.train()
         printF(f"Starting the epoch on: {get_time_now_str(allow_colon=True)}.")
@@ -112,7 +111,7 @@ def main():
             translated_sent = translate_sentence(model, ex.src, srcField, trgField, device, max_length=50)
             if translated_sent[-1]=='<eos>':
                 translated_sent = translated_sent[:-1]
-            src, trg, pred = ex.src, ex.trg, translated_sent # all the outputs are [str]; represents phonological stuff only if out_phon_type!='graphemes'
+            src, trg, pred = ex.src, ex.trg, translated_sent # all the outputs are [str]; represents phonological stuff only if hp.out_phon_type!='graphemes'
             phon_ed = editDistance(trg, pred)
             src_print, trg_print, pred_print = show_readable_triplet(src, trg, pred)
             printF(f"{i}. input: {src_print} ; gold: {trg_print} ; pred: {pred_print} ; ED = {phon_ed}")
@@ -123,16 +122,16 @@ def main():
             # 3. Print the results. Refer to whether 1. and 2. were applied.
 
             # Convert non-graphemic formats to words
-            if inp_phon_type!='graphemes' or out_phon_type!='graphemes':
+            if hp.inp_phon_type!='graphemes' or hp.out_phon_type!='graphemes':
                 src_morph, trg_morph, pred_morph = combined_phonology_processor.phon_elements2morph_elements_generic(src, trg, pred)
-                if out_phon_type!='graphemes': # another evaluation metric is needed; the source format is irrelevant
+                if hp.out_phon_type!='graphemes': # another evaluation metric is needed; the source format is irrelevant
                     morph_ed_print = editDistance(trg_morph, pred_morph)
                     printF(f"{i}. input_morph: {src_morph} ; gold_morph: {trg_morph} ; pred_morph: {pred_morph} ; morphlvl_ED = {morph_ed_print}\n")
                 else:
                     printF(f"{i}. input_morph: {src_morph} ; gold_morph: {''.join(trg_morph)} ; pred_morph: {''.join(pred_morph)}\n")
 
 
-        if PHON_REEVALUATE:
+        if hp.PHON_REEVALUATE:
             ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, converter=combined_phonology_processor, output_file=predictions_file)
             summary_writer.add_scalar("Dev set Phon-Accuracy", accuracy_phon, global_step=epoch)
             extra_str = f"; avgED_phon = {ED_phon}; avgAcc_phon = {accuracy_phon}"
@@ -156,7 +155,7 @@ def main():
                 # Check whether the last morph_accuracy was higher than the max. If yes, replace the ckpt with the last one.
                 if accuracy_morph > max_morph_acc:
                     max_morph_acc = accuracy_morph
-                    best_measures = [ED_phon, accuracy_phon, ED_morph, accuracy_morph, epoch] if PHON_REEVALUATE else [ED_morph, accuracy_morph, epoch]
+                    best_measures = [ED_phon, accuracy_phon, ED_morph, accuracy_morph, epoch] if hp.PHON_REEVALUATE else [ED_morph, accuracy_morph, epoch]
                     assert len([f for f in os.listdir(model_checkpoints_folder) if user_params_with_time_stamp in f]) == 1
                     ckpt_to_delete = [os.path.join(model_checkpoints_folder, f) for f in os.listdir(model_checkpoints_folder) if user_params_with_time_stamp in f][0]
                     temp_ckpt_name = model_checkpoint_file.replace('Model_Checkpoint',f'Model_Checkpoint_{epoch}')
@@ -170,7 +169,7 @@ def main():
     best_model_checkpoint_file = [os.path.join(model_checkpoints_folder, f) for f in os.listdir(model_checkpoints_folder) if user_params_with_time_stamp in f][0]
     load_checkpoint(load(best_model_checkpoint_file), model, optimizer)
     printF("Applying model on validation set")
-    if PHON_REEVALUATE:
+    if hp.PHON_REEVALUATE:
         ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, converter=combined_phonology_processor, output_file=predictions_file)
         assert [ED_phon, accuracy_phon, ED_morph, accuracy_morph] == best_measures[:-1] # sanity check
         printF(f"Phonological level: ED score on dev set is {ED_phon}. Avg-Accuracy is {accuracy_phon}.")
@@ -180,8 +179,8 @@ def main():
     printF(f"Morphological level: ED = {ED_morph}, Avg-Accuracy = {accuracy_morph}.")
 
     # region plotting
-    plt.figure(figsize=(10,8)), plt.suptitle(f'Development Set Results, {training_mode}-split')
-    if PHON_REEVALUATE:
+    plt.figure(figsize=(10,8)), plt.suptitle(f'Development Set Results, {hp.training_mode}-split')
+    if hp.PHON_REEVALUATE:
         plt.subplot(221), plt.title("Phon-ED"), plt.plot(EDs_phon)
         plt.subplot(222), plt.title("Phon-Acc"), plt.plot(accs_phon)
         plt.subplot(223), plt.title("Morph-ED"), plt.plot(EDs_morphs)
