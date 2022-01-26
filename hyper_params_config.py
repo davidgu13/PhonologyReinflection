@@ -28,15 +28,13 @@ parser.add_argument('out_phon_type', type=str, choices=['g','p','f'], help="Phon
 parser.add_argument('analogy_type', type=str, choices=['src1_cross1', 'None'], help='The analogies type to be applied', nargs='?', default='None')
 parser.add_argument('SEED', type=int, help='Initial seed for all random operations', nargs='?', default=42)
 parser.add_argument('device_idx', type=str, help='GPU index', nargs='?', default='0')
-parser.add_argument('--ATTN', action='store_true', help="If True and inp_phon_type=='f', input features are combined in a Self-Attention layer to form a single vector.", default=False)
+parser.add_argument('--ATTN', action='store_true', help="If True and inp_phon_type=='f', input features are combined in a Self-Attention layer to form a single vector.", default=True)
 args = parser.parse_args()
 lang, POS, SEED, device_idx = args.lang, args.POS, args.SEED, args.device_idx
 analogy_type = args.analogy_type
 training_mode, inp_phon_type, out_phon_type = args.training_mode, args.inp_phon_type, args.out_phon_type
 inp_phon_type, out_phon_type = data_types[inp_phon_type], data_types[out_phon_type]
 ANALOGY_MODE = analogy_type!='None'
-
-assert not (analogy_type=='src2' and training_mode=='lemma'), "2-Source is undefined for lemma-split mode!"
 
 PHON_UPGRADED = inp_phon_type=='features'
 PHON_REEVALUATE = out_phon_type != 'graphemes' # evaluation at the graphemes-level is also required
