@@ -7,7 +7,7 @@ from torch.nn.utils import clip_grad_norm_
 from torchtext.legacy.data import BucketIterator, TabularDataset
 
 import hyper_params_config as hp
-from run_setup import train_file, dev_file, model_checkpoints_folder, model_checkpoint_file, predictions_file, \
+from run_setup import train_file, dev_file, test_file, model_checkpoints_folder, model_checkpoint_file, predictions_file, \
     hyper_params_to_print, summary_writer, evaluation_graphs_file, get_time_now_str, user_params_with_time_stamp, printF
 from utils import translate_sentence, bleu, save_checkpoint, load_checkpoint, srcField, trgField, device, plt, editDistance
 from analogies_phonology_preprocessing import combined_phonology_processor, is_features_bundle
@@ -29,7 +29,7 @@ def main():
 
     printF("- Generating the datasets:")
     printF(f"\ttrain_file = {train_file}, dev_file = {dev_file}")
-    train_data, dev_data = TabularDataset.splits(path='', train=train_file, validation=dev_file,
+    train_data, dev_data, test_data = TabularDataset.splits(path='', train=train_file, validation=dev_file, test=test_file,
                              fields=[("src", srcField), ("trg", trgField)], format='tsv') # test data is out of the game.
     printF("- Building vocabularies")
     srcField.build_vocab(train_data, dev_data) # no limitation of max_size or min_freq is needed.
@@ -168,15 +168,18 @@ def main():
     printF("Loading the best model")
     best_model_checkpoint_file = [os.path.join(model_checkpoints_folder, f) for f in os.listdir(model_checkpoints_folder) if user_params_with_time_stamp in f][0]
     load_checkpoint(load(best_model_checkpoint_file), model, optimizer)
-    printF("Applying model on validation set")
-    if hp.PHON_REEVALUATE:
-        ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, converter=combined_phonology_processor, output_file=predictions_file)
-        assert [ED_phon, accuracy_phon, ED_morph, accuracy_morph] == best_measures[:-1] # sanity check
-        printF(f"Phonological level: ED score on dev set is {ED_phon}. Avg-Accuracy is {accuracy_phon}.")
-    else:
-        ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, output_file=predictions_file)
-        assert [ED_morph, accuracy_morph] == best_measures[:-1] # sanity check, for debugging purposes
-    printF(f"Morphological level: ED = {ED_morph}, Avg-Accuracy = {accuracy_morph}.")
+
+    for test_set in [dev_data, test_data]:
+        printF(f"Applying model on {'dev' if test_set==dev_data else 'test'} set")
+        # test_set = test_data
+        if hp.PHON_REEVALUATE:
+            ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(test_set, model, srcField, trgField, device, converter=combined_phonology_processor, output_file=predictions_file)
+            if test_set == dev_data: assert [ED_phon, accuracy_phon, ED_morph, accuracy_morph] == best_measures[:-1] # sanity check
+            printF(f"Phonological level: ED score on dev set is {ED_phon}. Avg-Accuracy is {accuracy_phon}.")
+        else:
+            ED_morph, accuracy_morph = bleu(test_set, model, srcField, trgField, device, output_file=predictions_file)
+            if test_set == dev_data: assert [ED_morph, accuracy_morph] == best_measures[:-1] # sanity check, for debugging purposes
+        printF(f"Morphological level: ED = {ED_morph}, Avg-Accuracy = {accuracy_morph}.")
 
     # region plotting
     plt.figure(figsize=(10,8)), plt.suptitle(f'Development Set Results, {hp.training_mode}-split')
@@ -191,6 +194,7 @@ def main():
     printF(f'Saving the plot of the results on {evaluation_graphs_file}')
     plt.savefig(evaluation_graphs_file)
     # endregion plotting
+
     printF(f'Elapsed time is {str(timedelta(seconds=time.time()-t0))}. Goodbye!')
 
 if __name__ == '__main__':
