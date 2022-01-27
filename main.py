@@ -19,6 +19,19 @@ def show_readable_triplet(src, trg, pred):
     trg_print, pred_print = (','.join(trg), ','.join(pred)) if hp.out_phon_type=='features' else (''.join(trg), ''.join(pred))
     return src_print, trg_print, pred_print
 
+def save_plots_figures(EDs_phon, accs_phon, EDs_morphs, accs_morph):
+    plt.figure(figsize=(10,8)), plt.suptitle(f'Development Set Results, {hp.training_mode}-split')
+    if hp.PHON_REEVALUATE:
+        plt.subplot(221), plt.title("Phon-ED"), plt.plot(EDs_phon)
+        plt.subplot(222), plt.title("Phon-Acc"), plt.plot(accs_phon)
+        plt.subplot(223), plt.title("Morph-ED"), plt.plot(EDs_morphs)
+        plt.subplot(224), plt.title("Morph-Acc"), plt.plot(accs_morph)
+    else:
+        plt.subplot(121), plt.title("Morph-Acc"), plt.plot(accs_morph)
+        plt.subplot(122), plt.title("Morph-ED"), plt.plot(EDs_morphs)
+    printF(f'Saving the plot of the results on {evaluation_graphs_file}')
+    plt.savefig(evaluation_graphs_file)
+
 def main():
     # Note: the arguments parsing occurs globally at hyper_params_config.py
     t0=time.time()
@@ -181,19 +194,7 @@ def main():
             if test_set == dev_data: assert [ED_morph, accuracy_morph] == best_measures[:-1] # sanity check, for debugging purposes
         printF(f"Morphological level: ED = {ED_morph}, Avg-Accuracy = {accuracy_morph}.")
 
-    # region plotting
-    plt.figure(figsize=(10,8)), plt.suptitle(f'Development Set Results, {hp.training_mode}-split')
-    if hp.PHON_REEVALUATE:
-        plt.subplot(221), plt.title("Phon-ED"), plt.plot(EDs_phon)
-        plt.subplot(222), plt.title("Phon-Acc"), plt.plot(accs_phon)
-        plt.subplot(223), plt.title("Morph-ED"), plt.plot(EDs_morphs)
-        plt.subplot(224), plt.title("Morph-Acc"), plt.plot(accs_morph)
-    else:
-        plt.subplot(121), plt.title("Morph-Acc"), plt.plot(accs_morph)
-        plt.subplot(122), plt.title("Morph-ED"), plt.plot(EDs_morphs)
-    printF(f'Saving the plot of the results on {evaluation_graphs_file}')
-    plt.savefig(evaluation_graphs_file)
-    # endregion plotting
+    save_plots_figures(EDs_phon, accs_phon, EDs_morphs, accs_morph)
 
     printF(f'Elapsed time is {str(timedelta(seconds=time.time()-t0))}. Goodbye!')
 
