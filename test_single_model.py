@@ -61,11 +61,11 @@ def get_train_dev_test_files():
     if hp.analogy_type == 'None':
         train_file = join(".data", "Reinflection", f"{hp.lang}.{hp.POS}", f"{hp.lang}.{hp.POS}.{hp.training_mode}.train.tsv")
         dev_file =   join(".data", "Reinflection", f"{hp.lang}.{hp.POS}", f"{hp.lang}.{hp.POS}.{hp.training_mode}.dev.tsv")
-        test_file =  join(".data", "Reinflection", f"{hp.lang}.{hp.POS}", f"{hp.lang}.{hp.POS}.{hp.training_mode}.test.tsv") # used only in testing.py
+        test_file =  join(".data", "Reinflection", f"{hp.lang}.{hp.POS}", f"{hp.lang}.{hp.POS}.{hp.training_mode}.test.tsv") # used only in test_single_model.py
     else: # hp.analogy_type == 'src1_cross1'
         train_file = join(".data", "Reinflection", f"{hp.lang}.{hp.POS}", "src1_cross1", f"{hp.lang}.{hp.POS}.{hp.training_mode}.train.src1_cross1.tsv")
         dev_file =   join(".data", "Reinflection", f"{hp.lang}.{hp.POS}", "src1_cross1", f"{hp.lang}.{hp.POS}.{hp.training_mode}.dev.src1_cross1.tsv")
-        test_file =  join(".data", "Reinflection", f"{hp.lang}.{hp.POS}", "src1_cross1", f"{hp.lang}.{hp.POS}.{hp.training_mode}.test.src1_cross1.tsv") # used only in testing.py
+        test_file =  join(".data", "Reinflection", f"{hp.lang}.{hp.POS}", "src1_cross1", f"{hp.lang}.{hp.POS}.{hp.training_mode}.test.src1_cross1.tsv") # used only in test_single_model.py
     return train_file, dev_file, test_file
 
 def delete_unwanted_log_file(folder_path, model_configuration_string: str):
@@ -92,9 +92,14 @@ def delete_unwanted_log_file(folder_path, model_configuration_string: str):
                 except FileNotFoundError: pass
             else: break
 
+def define_network(input_size_encoder, input_size_decoder, output_size):
+    from network import Encoder, Decoder, Seq2Seq
+    encoder_net = Encoder(input_size_encoder, hp.encoder_embedding_size, hp.hidden_size, hp.num_layers, hp.enc_dropout).to(device)
+    decoder_net = Decoder(input_size_decoder, hp.decoder_embedding_size, hp.hidden_size, output_size, hp.num_layers, hp.dec_dropout,).to(device)
+    model = Seq2Seq(encoder_net, decoder_net)
+    return model
 
-
-def main(model_file, device_idx):
+def test_single_model(model_file, device_idx, test_logs_folder, models_folder=""):
     t0=time.time()
     inference_time_stamp = datetime.now().strftime("%Y-%m-%d %H%M%S")
     model_time_stamp = set_configuration_hyper_parameters(device_idx)
@@ -102,18 +107,16 @@ def main(model_file, device_idx):
     model_full_configuration_string = f"{model_time_stamp}_{hp.lang}_{hp.POS}_{hp.training_mode}_{hp.inp_phon_type[0]}_" \
      f"{hp.out_phon_type[0]}_{hp.analogy_type}_{hp.SEED}_{hp.device_idx}{'_attn' if hp.PHON_USE_ATTENTION else ''}" # the unique ID of this run
 
-    model_full_path = join("Results", "Checkpoints", model_file)
-    test_log_file = join("Results", "Logs", model_file.replace("Model_Checkpoint", f"Test-Logs-{inference_time_stamp}-for-model").replace(".pth.tar", ".txt"))
+    model_full_path = join("Results", "Checkpoints", model_file) if models_folder=="" else join(models_folder, model_file)
+    test_log_file = join(test_logs_folder, model_file.replace("Model_Checkpoint", f"Test-Logs-{inference_time_stamp}-for-model").replace(".pth.tar", ".txt"))
     test_predictions_file = join("Results", "PredictionFiles", f"Test-Predictions-{inference_time_stamp}-for-model_{model_full_configuration_string}.txt")
 
     test_printF = partial(printF, fn=test_log_file)
 
     train_file, dev_file, test_file = get_train_dev_test_files()
-
     print_testing_configuration(test_printF, train_file, dev_file, test_file, model_full_path, test_log_file, test_predictions_file)
 
     from utils import bleu, srcField, trgField, device
-    from network import Encoder, Decoder, Seq2Seq
 
     train_data, dev_data, test_data = TabularDataset.splits(path='', train=train_file, validation=dev_file,
         test=test_file, fields=[("src", srcField), ("trg", trgField)], format='tsv') # test data is out of the game.
@@ -121,13 +124,8 @@ def main(model_file, device_idx):
     srcField.build_vocab(train_data, dev_data) # no limitation of max_size or min_freq is needed.
     trgField.build_vocab(train_data, dev_data) # no limitation of max_size or min_freq is needed.
 
-    input_size_encoder = len(srcField.vocab)
-    input_size_decoder = len(trgField.vocab)
-    output_size = len(trgField.vocab)
-
-    encoder_net = Encoder(input_size_encoder, hp.encoder_embedding_size, hp.hidden_size, hp.num_layers, hp.enc_dropout).to(device)
-    decoder_net = Decoder(input_size_decoder, hp.decoder_embedding_size, hp.hidden_size, output_size, hp.num_layers, hp.dec_dropout,).to(device)
-    model = Seq2Seq(encoder_net, decoder_net)
+    input_size_encoder, input_size_decoder, output_size = len(srcField.vocab), len(trgField.vocab), len(trgField.vocab)
+    model = define_network(input_size_encoder, input_size_decoder, output_size)
 
     test_printF("Loading the model")
     model.load_state_dict(load(model_full_path, map_location=device)["state_dict"])
@@ -153,5 +151,5 @@ def main(model_file, device_idx):
 
 if __name__ == '__main__':
     model_file = "Model_Checkpoint_49_2022-01-14 213919_sqi_V_form_f_p_src1_cross1_21_2_attn.pth.tar"
-    device_idx = 0
-    main(model_file, device_idx)
+    device_idx, test_logs_folder = 0, join("Results", "Logs")
+    test_single_model(model_file, device_idx, test_logs_folder)
