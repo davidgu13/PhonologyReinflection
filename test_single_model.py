@@ -11,7 +11,7 @@ def printF(s:str, fn):
     print(s)
     open(fn, 'a+', encoding='utf8').write(s + '\n')
 
-def set_configuration_hyper_parameters(device_idx):
+def set_configuration_hyper_parameters(device_idx, model_file):
     """
     parse the hyper-parameters, as well as the run configuration, from the model's file name. Based on the format:
     f"Model_Checkpoint_{epoch}_{time_stamp}_{lang}_{POS}_{training_mode}_{inp_phon_type}_{out_phon_type}_{analogy_type}_{SEED}_{device_idx}.pth.tar",
@@ -54,8 +54,7 @@ Validated on file: {dev_file}"
 Gonna test on file: {test_file}"
 Model checkpoint file: {model_full_path}
 Test-Log file: {test_log_file}
-Test-Predictions file: {test_predictions_file}\n\n
-Original run's parameters:""")
+Test-Predictions file: {test_predictions_file}\n\n""")
 
 def get_train_dev_test_files():
     if hp.analogy_type == 'None':
@@ -84,15 +83,14 @@ def delete_unwanted_log_file(folder_path, model_configuration_string: str):
         for _ in range(seconds):
             if not done:
                 try:
-                    model_configuration_string = add_and_replace_time_stamp(model_configuration_string,
-                                                model_configuration_string[:17], 1)
+                    model_configuration_string = add_and_replace_time_stamp(model_configuration_string, model_configuration_string[:17], 1)
                     log_file_to_remove = join(folder_path, f"Logs_{model_configuration_string}.txt")
                     remove(log_file_to_remove)
                     done = True
                 except FileNotFoundError: pass
             else: break
 
-def define_network(input_size_encoder, input_size_decoder, output_size):
+def define_network(input_size_encoder, input_size_decoder, output_size, device):
     from network import Encoder, Decoder, Seq2Seq
     encoder_net = Encoder(input_size_encoder, hp.encoder_embedding_size, hp.hidden_size, hp.num_layers, hp.enc_dropout).to(device)
     decoder_net = Decoder(input_size_decoder, hp.decoder_embedding_size, hp.hidden_size, output_size, hp.num_layers, hp.dec_dropout,).to(device)
@@ -102,7 +100,7 @@ def define_network(input_size_encoder, input_size_decoder, output_size):
 def test_single_model(model_file, device_idx, test_logs_folder, models_folder=""):
     t0=time.time()
     inference_time_stamp = datetime.now().strftime("%Y-%m-%d %H%M%S")
-    model_time_stamp = set_configuration_hyper_parameters(device_idx)
+    model_time_stamp = set_configuration_hyper_parameters(device_idx, model_file)
 
     model_full_configuration_string = f"{model_time_stamp}_{hp.lang}_{hp.POS}_{hp.training_mode}_{hp.inp_phon_type[0]}_" \
      f"{hp.out_phon_type[0]}_{hp.analogy_type}_{hp.SEED}_{hp.device_idx}{'_attn' if hp.PHON_USE_ATTENTION else ''}" # the unique ID of this run
@@ -116,32 +114,39 @@ def test_single_model(model_file, device_idx, test_logs_folder, models_folder=""
     train_file, dev_file, test_file = get_train_dev_test_files()
     print_testing_configuration(test_printF, train_file, dev_file, test_file, model_full_path, test_log_file, test_predictions_file)
 
-    from utils import bleu, srcField, trgField, device
+    # from utils import bleu, utils.device, Field, src_tokenizer, trg_tokenizer, preprocess_methods_extended
+    import utils
+    utils.srcField = utils.Field(tokenize=utils.src_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=utils.preprocess_methods_extended['src']) # initialize
+    utils.trgField = utils.Field(tokenize=utils.trg_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=utils.preprocess_methods_extended['trg'])
+    srcField, trgField = utils.srcField, utils.trgField
 
     train_data, dev_data, test_data = TabularDataset.splits(path='', train=train_file, validation=dev_file,
-        test=test_file, fields=[("src", srcField), ("trg", trgField)], format='tsv') # test data is out of the game.
+        test=test_file, fields=[("src", srcField), ("trg", trgField)], format='tsv')
 
     srcField.build_vocab(train_data, dev_data) # no limitation of max_size or min_freq is needed.
     trgField.build_vocab(train_data, dev_data) # no limitation of max_size or min_freq is needed.
+    # print(srcField.vocab.itos) # for debugging purposes
 
     input_size_encoder, input_size_decoder, output_size = len(srcField.vocab), len(trgField.vocab), len(trgField.vocab)
-    model = define_network(input_size_encoder, input_size_decoder, output_size)
+    # print(f"input_size_encoder = {input_size_encoder}, input_size_decoder = {input_size_decoder}") # for debugging purposes
+    model = define_network(input_size_encoder, input_size_decoder, output_size, utils.device)
 
     test_printF("Loading the model")
-    model.load_state_dict(load(model_full_path, map_location=device)["state_dict"])
-    model.to(device)
+    model.load_state_dict(load(model_full_path, map_location=utils.device)["state_dict"])
+    model.to(utils.device)
 
     model.eval()
+    from utils import bleu
     for name, test_set in zip(['dev', 'test'], [dev_data, test_data]):
 
         test_printF(f"Applying on {name} set")
         if hp.PHON_REEVALUATE:
             from analogies_phonology_preprocessing import combined_phonology_processor
-            ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(test_set, model, srcField, trgField, device,
+            ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(test_set, model, srcField, trgField, utils.device,
                                     converter=combined_phonology_processor, output_file=test_predictions_file)
             test_printF(f"Phonological level: ED score on {name} set is {ED_phon}. Avg-Accuracy is {accuracy_phon}.")
         else:
-            ED_morph, accuracy_morph = bleu(test_set, model, srcField, trgField, device, output_file=test_predictions_file)
+            ED_morph, accuracy_morph = bleu(test_set, model, srcField, trgField, utils.device, output_file=test_predictions_file)
         test_printF(f"Morphological level: ED = {ED_morph}, Avg-Accuracy = {accuracy_morph}.\n")
 
     delete_unwanted_log_file(join("Results", "Logs"), model_full_configuration_string.replace(model_time_stamp, inference_time_stamp))
@@ -150,6 +155,6 @@ def test_single_model(model_file, device_idx, test_logs_folder, models_folder=""
 
 
 if __name__ == '__main__':
-    model_file = "Model_Checkpoint_49_2022-01-14 213919_sqi_V_form_f_p_src1_cross1_21_2_attn.pth.tar"
+    model_file = "Model_Checkpoint_43_2022-01-06 015056_sqi_V_form_f_p_None_42_0_attn.pth.tar"
     device_idx, test_logs_folder = 0, join("Results", "Logs")
     test_single_model(model_file, device_idx, test_logs_folder)
