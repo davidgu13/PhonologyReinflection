@@ -4,7 +4,6 @@ from datetime import timedelta, datetime
 from torchtext.legacy.data import TabularDataset
 from torch import load
 
-import hyper_params_config as hp
 from functools import partial
 
 def printF(s:str, fn):
@@ -97,7 +96,7 @@ def define_network(input_size_encoder, input_size_decoder, output_size, device):
     model = Seq2Seq(encoder_net, decoder_net)
     return model
 
-def test_single_model(model_file, device_idx, test_logs_folder, models_folder=""):
+def test_single_model(model_file, test_logs_folder, models_folder="", device_idx=0):
     t0=time.time()
     inference_time_stamp = datetime.now().strftime("%Y-%m-%d %H%M%S")
     model_time_stamp = set_configuration_hyper_parameters(device_idx, model_file)
@@ -114,7 +113,6 @@ def test_single_model(model_file, device_idx, test_logs_folder, models_folder=""
     train_file, dev_file, test_file = get_train_dev_test_files()
     print_testing_configuration(test_printF, train_file, dev_file, test_file, model_full_path, test_log_file, test_predictions_file)
 
-    # from utils import bleu, utils.device, Field, src_tokenizer, trg_tokenizer, preprocess_methods_extended
     import utils
     utils.srcField = utils.Field(tokenize=utils.src_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=utils.preprocess_methods_extended['src']) # initialize
     utils.trgField = utils.Field(tokenize=utils.trg_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=utils.preprocess_methods_extended['trg'])
@@ -155,6 +153,15 @@ def test_single_model(model_file, device_idx, test_logs_folder, models_folder=""
 
 
 if __name__ == '__main__':
-    model_file = "Model_Checkpoint_43_2022-01-06 015056_sqi_V_form_f_p_None_42_0_attn.pth.tar"
-    device_idx, test_logs_folder = 0, join("Results", "Logs")
-    test_single_model(model_file, device_idx, test_logs_folder)
+    from argparse import ArgumentParser
+    parser = ArgumentParser(description="Test the models given some parameters")
+    parser.add_argument('model_file', type=str, help='The relative path of the model file')
+    parser.add_argument('test_logs_folder', type=str, help='The path of the dest folder of the test logs')
+    parser.add_argument('models_folder', type=str, help='Path of the models\' folder')
+    parser.add_argument('device_idx', type=int, help='GPU index')
+    args = parser.parse_args()
+    model_file, test_logs_folder, models_folder, device_idx = args.model_file, args.test_logs_folder, args.models_folder, args.device_idx
+    import sys
+    sys.argv = [sys.argv[0]]
+    import hyper_params_config as hp
+    test_single_model(model_file, test_logs_folder, models_folder, device_idx)
