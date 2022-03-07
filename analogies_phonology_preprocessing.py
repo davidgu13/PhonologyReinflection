@@ -2,7 +2,13 @@ import os
 from more_itertools import flatten
 from languages_setup import langPhonology, LanguageSetup, joinit
 from data2samples_converter import Data2SamplesConverter
-from hyper_params_config import analogy_type, training_mode, inp_phon_type, out_phon_type, POS
+import hyper_params_config as hp
+
+def is_features_bundle(e):
+    if hp.lang == 'kat':
+        return hp.POS in e # in Georgian there exist features like 's1', 'oPL' etc.
+    else:
+        return str.isupper(e) and hp.POS in e # assuming no lower-case features exist in other languages.
 
 def remove_double_dollars(sequence:[str]):
     # used during the conversion to graphemes-mode
@@ -16,7 +22,6 @@ def remove_double_dollars(sequence:[str]):
 
 class GenericPhonologyProcessing(Data2SamplesConverter):
     # Implements phonology logic while accounting for Analogies format. Use it only if the input & output aren't both graphemes
-    # (in main_network set PHON_UPDATED according to inp_phon_type and out_phon_type)
     def __init__(self, phonology: LanguageSetup):
         super().__init__()
         self.phonology_obj = phonology
@@ -34,19 +39,19 @@ class GenericPhonologyProcessing(Data2SamplesConverter):
         """
         if not convert_src: new_src_list = src_list
         else:
-            src_list = src_list.split(',+,')
-            src_list, new_src_list = [e.replace(',',';') if POS in e else e.replace(',','') for e in src_list], []
-            for i,e in enumerate(src_list):
+            src_list_split = src_list.split(',+,')
+            src_list_separated, new_src_list = [e.replace(',',';') if is_features_bundle(e) else e.replace(',','') for e in src_list_split], []
+            for i,e in enumerate(src_list_separated):
                 if ';' in e:
                     new_src_list.append(e.split(';'))
                 else:
-                    new_src_list.append(self.phonology_obj.word2phonemes(e, mode=inp_phon_type))
+                    new_src_list.append(self.phonology_obj.word2phonemes(e, mode=hp.inp_phon_type))
             new_src_list = list(flatten( joinit(new_src_list,['+']) ))
 
         if not convert_trg: new_trg_form = trg_form
         else:
             trg_form = trg_form.replace(',','')
-            new_trg_form = self.phonology_obj.word2phonemes(trg_form, mode=out_phon_type)
+            new_trg_form = self.phonology_obj.word2phonemes(trg_form, mode=hp.out_phon_type)
         return new_src_list, new_trg_form
 
 
@@ -55,7 +60,7 @@ class GenericPhonologyProcessing(Data2SamplesConverter):
         assert mode in {'features', 'phonemes'}
         if mode=='features': # type(sequence)==str
             phon_feats = sequence.split(',$,') # cannot handle more than 2 following '$' chars in a row. Not an issue for now.
-            if self.phonology_obj._manual_phonemes2word:
+            if self.phonology_obj.manual_phonemes2word and hp.PHON_USE_ATTENTION:
                 new_sequence = self.phonology_obj.phonemes2word([e.split(',')[-1] for e in phon_feats], mode='phonemes')
             else:
                 new_sequence = self.phonology_obj.phonemes2word([p.split(',') for p in phon_feats], mode='features')
@@ -79,12 +84,12 @@ class GenericPhonologyProcessing(Data2SamplesConverter):
 
 
     def phon_elements2morph_elements_generic(self, src:[str], trg:[str], pred:[str],
-                     inp_mode:str=inp_phon_type, out_mode:str=out_phon_type) -> ([str], str, str):
+                     inp_mode:str=hp.inp_phon_type, out_mode:str=hp.out_phon_type) -> ([str], str, str):
         # Convert the source, target & prediction elements (if needed)
         assert inp_mode in {'graphemes', 'phonemes', 'features'} and out_mode in {'graphemes', 'phonemes', 'features'}
         # Handle source
         if inp_mode=='graphemes':
-            new_src = [e.replace(',',';' if POS in e else '') for e in ','.join(src).split(',+,')]
+            new_src = [e.replace(',',';' if is_features_bundle(e) else '') for e in ','.join(src).split(',+,')]
         else: # 'phonemes' or 'features'
             src = ','.join(src)
             new_src = self._phon_src2word_src_generic(src)
@@ -105,13 +110,18 @@ class GenericPhonologyProcessing(Data2SamplesConverter):
     # Do not implement a method for writing the processed data to files! Make sure to only use it at the preprocessing part!
 
 
-combined = GenericPhonologyProcessing(langPhonology)
+combined_phonology_processor = GenericPhonologyProcessing(langPhonology)
 
 if __name__ == '__main__':
-    old_dir = os.path.join(".data","AnalogiesData","src1_cross1")
-    orig_trn_file, orig_dev_file, orig_tst_file = [f"{training_mode}sp.schema2.{e}_{analogy_type}.tsv" for e in ['train', 'dev', 'test']]
-    fn = os.path.join(old_dir,orig_tst_file)
-    lines = open(fn,encoding='utf8').readlines()
-    for l in lines:
+    # For debugging purposes
+    old_dir = os.path.join(".data", "Reinflection", "kat.V", "src1_cross1")
+    test_file = os.path.join(old_dir, f"kat.V.form.test.src1_cross1.tsv")
+    lines = open(test_file, encoding='utf8').readlines()
+    for i, l in enumerate(lines):
+        if i == 20: break
         src, trg = l.strip().split('\t')
-        new_src, new_trg = combined.line2phon_line_generic(src,trg)
+        new_src, new_trg = combined_phonology_processor.line2phon_line_generic(src, trg)
+        print(f"src: {src}, trg: {trg}")
+        print(f"new_src: {new_src}, new_trg: {new_trg}\n")
+    # If this doesn't run, it's because in hyper_params_config.py the default I-O values are g-g.
+    # Try modifying them to f-f, or even f-p + default --ATTN value to True

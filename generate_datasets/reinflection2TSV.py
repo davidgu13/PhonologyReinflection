@@ -74,7 +74,7 @@ def main():
     if POS is None and training_mode is None: assert lang=='all'
 
     if lang=='all':
-        data_dir = join(".data", "Reinflection")
+        data_dir = join("../.data", "Reinflection")
         for sub_dir in os.listdir(data_dir):
             flag = False
             subsub_dir = join(data_dir, sub_dir)
@@ -88,7 +88,7 @@ def main():
             else: print(f"No files were converted in {sub_dir}!")
                 # assert ext=='.txt', f"the extension of the file {join(subsub_dir, path)} must be .txt !"
     else:
-        data_dir = join(".data", "Reinflection", f"{lang}.{POS}")
+        data_dir = join("../.data", "Reinflection", f"{lang}.{POS}")
         if training_mode=='both':
             for tm in ['form', 'lemma']:
                 for a in ['train', 'dev', 'test']:

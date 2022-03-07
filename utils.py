@@ -1,30 +1,46 @@
 # The code is based on https://github.com/aladdinpersson/Machine-Learning-Collection/tree/master/ML/Pytorch/more_advanced/Seq2Seq_attention, with some adjustments ;)
-from os.path import join
 import numpy as np
 import torch
-import torch_scatter # super important! The link I used for installing it is https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html#quick-start
+from torch_scatter import segment_mean_coo # super important! The link I used for installing it: https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html#quick-start
 from torchtext.legacy.data import Field
 from copy import deepcopy
-
 from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
-from analogies_phonology_preprocessing import combined, GenericPhonologyProcessing
-from hyper_params_config import SEED, inp_phon_type, out_phon_type, device_idx, log_file
-from languages_setup import MAX_FEAT_SIZE
 
-device = torch.device(f"cuda:{device_idx}" if torch.cuda.is_available() else "cpu")
-torch.manual_seed(SEED)
+import hyper_params_config as hp
+from run_setup import get_time_now_str, printF
+from analogies_phonology_preprocessing import combined_phonology_processor, GenericPhonologyProcessing
+from languages_setup import MAX_FEAT_SIZE, langs_properties
+
+device = torch.device(f"cuda:{hp.device_idx}" if torch.cuda.is_available() else "cpu")
+torch.manual_seed(hp.SEED)
 
 src_tokenizer = lambda x: x.split(',')
 trg_tokenizer = lambda x: x.split(',')
 
-# The acrtual Fields are defined below
-# german = Field(tokenize=tokenize_ger, lower=True, init_token="<sos>", eos_token="<eos>")
-# english = Field(tokenize=tokenize_eng, lower=True, init_token="<sos>", eos_token="<eos>")
+# These are preprocessing methods that convert the data to the formats required by hp.inp_phon_type & hp.out_phon_type.
+# Also, preprocessing of g-g reinflection (the standard variation) is supported, to maintain consistency.
+def phon_extended_src_preprocess(x: [str]) -> [str]:
+    # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
+    x = langs_properties[hp.lang][3](','.join(x)).split(',') # clean the data
+    if hp.inp_phon_type=='graphemes':
+        return x # do nothing
+    else:
+        new_x, _ = combined_phonology_processor.line2phon_line_generic(','.join(x), '', convert_trg=False)
+        return new_x
 
-def printF(s:str, fn=log_file):
-    print(s)
-    open(fn, 'a+', encoding='utf8').write(s + '\n')
+def phon_extended_trg_preprocess(x: [str]) -> [str]:
+    # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
+    x = langs_properties[hp.lang][3](','.join(x)).split(',')
+    if hp.out_phon_type=='graphemes':
+        return x # do nothing
+    else:
+        _, new_x = combined_phonology_processor.line2phon_line_generic('', ','.join(x), convert_src=False)
+        return new_x
+
+preprocess_methods_extended = {'src': phon_extended_src_preprocess, 'trg': phon_extended_trg_preprocess}
+srcField = Field(tokenize=src_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=preprocess_methods_extended['src'])
+trgField = Field(tokenize=trg_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=preprocess_methods_extended['trg'])
 
 
 def get_abs_offsets(x: torch.Tensor, phon_delim, phon_max_len=MAX_FEAT_SIZE):
@@ -46,38 +62,8 @@ def postprocessBatch(src:torch.Tensor, offsets):
     repeats = torch.ones(new_len, dtype=torch.long, device=device)
     repeats[offsets] = MAX_FEAT_SIZE+1 # 4 = max_size +1
     final_offsets = torch.repeat_interleave(torch.arange(new_len, device=device), repeats)
-    new_emb = torch_scatter.segment_mean_coo(src, final_offsets)
+    new_emb = segment_mean_coo(src, final_offsets)
     return new_emb
-
-
-# def pad_to_maxfeats(spl:[[str]], maxLen=MAX_FEAT_SIZE):
-#     l = [e.split(',') for e in spl]
-#     l = [e+['NA']*(maxLen-len(e)) for e in l]
-#     spl = l
-#     return spl
-
-# Implement here extended preproc methods that convert the data to the formats required at inp_phon_type and out_phon_type.
-# Also, supply some preproc to g-g reinflection (the standard variation), to maintain consistency (see the first code lines).
-def phon_ext_src_preproc(x: [str]) -> [str]:
-    # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
-    if inp_phon_type=='graphemes':
-        return x # do nothing
-    else:
-        new_x, _ = combined.line2phon_line_generic(','.join(x), '', convert_trg=False)
-        return new_x
-
-def phon_ext_trg_preproc(x: [str]) -> [str]:
-    # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
-    if out_phon_type=='graphemes':
-        return x # do nothing
-    else:
-        _, new_x = combined.line2phon_line_generic('', ','.join(x), convert_src=False)
-        return new_x
-
-preproc_func_ext = {'src':phon_ext_src_preproc, 'trg':phon_ext_trg_preproc}
-srcField = Field(tokenize=src_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=preproc_func_ext['src'])
-trgField = Field(tokenize=trg_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=preproc_func_ext['trg'])
-
 
 def translate_sentence(model, sentence, german, english, device, max_length=50, return_attn=False):
     # Load german tokenizer
@@ -167,7 +153,6 @@ def bleu(data, model, german:Field, english:Field, device, converter:GenericPhon
         returned = res, acc
     return returned
 
-
 def write_predictions(path, targets, preds, morph_accs, morph_eds, sources=None, phon_accs=None, phon_eds=None, phon_targets=None, phon_preds=None):
     assert bool(phon_accs)==bool(phon_eds), "Either both or none of phon_accs & phon_eds should be supplied!"
     printF(f"Predictions are being written to {path}.")
@@ -190,11 +175,6 @@ def write_predictions(path, targets, preds, morph_accs, morph_eds, sources=None,
             else:
                 for (s, t, p, m_acc, m_ed) in it:
                     f.write(f"Source: {s} ; Target: {t} ; Pred: {p} ; Morph-Exact: {'Yes' if m_acc else 'No'} ; Morph-ED = {m_ed}\n")
-
-def get_time_now_str(allow_colon:bool):
-    from datetime import datetime
-    s = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    return s if allow_colon else s.replace(':', '')
 
 def save_checkpoint(model, optimizer, filename="my_checkpoint.pth.tar", file_to_delete=""): # modify with https://github.com/pytorch/examples/blob/537f6971872b839b36983ff40dafe688276fe6c3/imagenet/main.py#L237
     if file_to_delete!="":
@@ -241,7 +221,6 @@ def showAttention(input_sentence, output_words, attentions, fig_name="Attention 
     ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
     # plt.show()
     plt.savefig(fig_name)
-
 
 def write_dataset(p, dataset, test_mode=False):
     """

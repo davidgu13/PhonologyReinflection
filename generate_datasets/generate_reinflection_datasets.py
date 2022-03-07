@@ -18,7 +18,7 @@ def handle_georgian(data):
     *The new file contains only verbs
     """
     data = list(filter(lambda x: not x[2].startswith('V;'), data)) # filter old verbs
-    new_verbs = dict2lists(read(join(".data", "RawData", "katVerbsNew.txt"), 'kat'))
+    new_verbs = dict2lists(read(join("../.data", "RawData", "katVerbsNew.txt"), 'kat'))
     new_data = data+new_verbs
     return new_data
 
@@ -114,24 +114,24 @@ def main():
     dataset_size = args.dataset_size
     train_index, dev_index, dev_size = int(0.8*dataset_size), int(0.9*dataset_size), int(0.1*dataset_size)
     # The file of the inflection tables, possibly with several POS.
-    file_path = join(".data", "RawData", f"{lang}.txt")
+    file_path = join("../.data", "RawData", f"{lang}.txt")
     # 1. Separate the data to the POSs.
     data_dict = read(file_path, lang)
     data_lists = dict2lists(data_dict)
     if lang=='kat': data_lists = handle_georgian(data_lists)
     data_POS = split_lines_by_POS(data_lists)
     # 2. Write the split data to inflection tables
-    if not os.path.isdir(join(".data","InflectionTables")): os.mkdir(join(".data","InflectionTables"))
-    if not os.path.isdir(join(".data","Reinflection")): os.mkdir(join(".data","Reinflection"))
+    if not os.path.isdir(join("../.data", "InflectionTables")): os.mkdir(join("../.data", "InflectionTables"))
+    if not os.path.isdir(join("../.data", "Reinflection")): os.mkdir(join("../.data", "Reinflection"))
     for pos,pos_list in data_POS.items():
-        new_path = join(".data", "InflectionTables", f"{lang}.{pos}.txt")
+        new_path = join("../.data", "InflectionTables", f"{lang}.{pos}.txt")
         write_dataset(new_path, pos_list, message=f"Writing the file {new_path}")
 
     # 3. For each pos, store all the tables in a table
     data_POS_dict = {k:lists2dict(l) for k,l in data_POS.items()}
     for pos, pos_dictionary in data_POS_dict.items():
         # 4. Generate form-split samples
-        reinflection_dir = join(".data", "Reinflection", f"{lang}.{pos}")
+        reinflection_dir = join("../.data", "Reinflection", f"{lang}.{pos}")
         if not os.path.isdir(reinflection_dir): os.mkdir(reinflection_dir)
 
         form_split = generate_reinflection(pos_dictionary, num_samples=dataset_size, message=f"Generating {lang}.{pos} form-split data:")

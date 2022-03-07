@@ -1,6 +1,5 @@
 from itertools import chain
-from g2p_config import idx2feature, feature2idx, p2f_dict, f2p_dict, langs_properties, general_punctuations
-from functools import partial
+from g2p_config import idx2feature, feature2idx, p2f_dict, f2p_dict, langs_properties, punctuations
 
 def joinit(iterable, delimiter):
     # Inserts delimiters between elements of some iterable object.
@@ -9,6 +8,24 @@ def joinit(iterable, delimiter):
     for x in it:
         yield delimiter
         yield x
+
+# Foe debugging purposes:
+import numpy as np
+def editDistance(str1, str2):
+    """Simple Levenshtein implementation"""
+    table = np.zeros([len(str2) + 1, len(str1) + 1])
+    for i in range(1, len(str2) + 1):
+        table[i][0] = table[i - 1][0] + 1
+    for j in range(1, len(str1) + 1):
+        table[0][j] = table[0][j - 1] + 1
+    for i in range(1, len(str2) + 1):
+        for j in range(1, len(str1) + 1):
+            if str1[j - 1] == str2[i - 1]:
+                dg = 0
+            else:
+                dg = 1
+            table[i][j] = min(table[i - 1][j] + 1, table[i][j - 1] + 1, table[i - 1][j - 1] + dg)
+    return int(table[len(str2)][len(str1)])
 
 def tuple_of_phon_tuples2phon_sequence(tupleOfTuples) -> [str]:
     return list(chain(*joinit(tupleOfTuples, ('$',))))
@@ -23,14 +40,14 @@ class LanguageSetup:
     def __init__(self, lang_name: str, graphemes2phonemes:dict, manual_word2phonemes=None, manual_phonemes2word=None):
         self._name = lang_name
         self._graphemes2phonemes = graphemes2phonemes
-        self._graphemes2phonemes.update(dict(zip(general_punctuations, general_punctuations)))
+        self._graphemes2phonemes.update(dict(zip(punctuations, punctuations)))
         self._phonemes2graphemes = {v:k for k, v in self._graphemes2phonemes.items()} # _graphemes2phonemes.reverse
 
-        self._alphabet = self._graphemes2phonemes.keys() # the graphemes of the language
-        self._phonemes = self._graphemes2phonemes.values()
+        self._alphabet = list(self._graphemes2phonemes.keys()) # the graphemes of the language
+        self._phonemes = list(self._graphemes2phonemes.values())
 
         self._manual_word2phonemes = manual_word2phonemes
-        self._manual_phonemes2word = manual_phonemes2word
+        self.manual_phonemes2word = manual_phonemes2word
 
     def get_lang_name(self): return self._name
     def get_lang_alphabet(self): return self._alphabet
@@ -66,8 +83,7 @@ class LanguageSetup:
             features = tuple_of_phon_tuples2phon_sequence(features)
             return features
 
-
-    def phonemes2word(self, phonemes: [[int]], mode:str) -> str:
+    def phonemes2word(self, phonemes: [[str]], mode:str) -> str:
         """
         Convert a list of phoneme tuples to a word (sequence of graphemes)
         :param phonemes: [(,,), (,,), (,,), ...] or (*IPA symbols*)
@@ -77,43 +93,49 @@ class LanguageSetup:
         assert mode in {'features', 'phonemes'}, f"Mode {mode} is invalid"
 
         if mode=='phonemes':
-            if self._manual_phonemes2word:
-                graphemes = self._manual_phonemes2word(phonemes)
+            if self.manual_phonemes2word:
+                graphemes = self.manual_phonemes2word(phonemes)
             else:
                 graphemes = [self._phonemes2graphemes[p] for p in phonemes]
         else: # mode=='features'
-            graphemes = []
-            for f_tuple in phonemes:
-                if PHON_USE_ATTENTION:
-                    p = f_tuple[-1]
-                    g = self._phonemes2graphemes[p]
-                else:
+            if PHON_USE_ATTENTION:
+                phoneme_tokens = [f_tuple[-1] for f_tuple in phonemes]
+            else:
+                phoneme_tokens = []
+                for f_tuple in phonemes:
                     f_tuple = tuple(idx2feature[int(i)] for i in f_tuple if i != 'NA')
                     p = f2p_dict.get(f_tuple)
-
-                    if p is None: g = '#'
-                    else: g = self._phonemes2graphemes[p]
-                graphemes.append(g)
+                    if p is None or p not in self._phonemes: p = "#" # the predicted bundle is illegal or doesn't exist in this language
+                    phoneme_tokens.append(p)
+            graphemes = self.phonemes2word(phoneme_tokens, 'phonemes')
         return ''.join(graphemes)
 
-def twoWay_conversion(w):
+# For debugging purposes:
+def two_way_conversion(w):
+    print(f"PHON_USE_ATTENTION, lang = {PHON_USE_ATTENTION}, '{lang}'")
     print(f"w = {w}")
     ps = langPhonology.word2phonemes(w, mode='phonemes')
     feats = langPhonology.word2phonemes(w, mode='features')
-    print(f"phonemes = {ps}")
-    print(f"features = {feats}")
-    print(f"p2word: {langPhonology.phonemes2word(ps, mode='phonemes')}")
+    print(f"phonemes = {ps}\nfeatures = {feats}")
+
+    p2word = langPhonology.phonemes2word(ps, mode='phonemes')
+    print(f"p2word: {p2word}\nED(w, p2word) = {editDistance(w, p2word)}")
+
     feats = [f.split(',') for f in ','.join(feats).split(',$,')]
-    print(f"f2word: {langPhonology.phonemes2word(feats,mode='features')}")
+    f2word = langPhonology.phonemes2word(feats, mode='features')
+    print(f"f2word: {f2word}\nED(w, f2word) = {editDistance(w, f2word)}")
 
-# Note: Comment the first line in debug mode, or the second one otherwise.
-# from hyper_params_config import PHON_USE_ATTENTION, lang
-PHON_USE_ATTENTION, lang = True, 'tur'
-
-MAX_FEAT_SIZE = max([len(p2f_dict[p]) for p in langs_properties[lang][0].values()])
+# Change this to True only when debugging the g2p/p2g conversions!
+debugging_mode = False
+if debugging_mode:
+    PHON_USE_ATTENTION, lang = False, 'fin'
+else:
+    from hyper_params_config import PHON_USE_ATTENTION, lang
+MAX_FEAT_SIZE = max([len(p2f_dict[p]) for p in langs_properties[lang][0].values() if p in p2f_dict]) # composite phonemes aren't counted in that list
 langPhonology = LanguageSetup(lang, langs_properties[lang][0], langs_properties[lang][1], langs_properties[lang][2])
 
 if __name__ == '__main__':
-    words4example = {'kat': 'მჭირდებოდნენ', 'swc': 'magongjwa', 'sqi': 'rije', 'hun': 'hűdályokról', 'bul': 'най-ясното',
-                     'lav': 'abstrahēšana', 'fin': 'ilmaatyynyissä', 'tur': 'yığmalılar mıymış' } #, 'hye': 'եվրոպիումովդ'}
-    twoWay_conversion(words4example[lang])
+    # made-up words to test the correctness of the g2p/p2g conversions algorithms (for debugging purposes):
+    example_words = {'kat': 'არ მჭირდ-ებოდყეტ', 'swc': "magnchdhe-ong jwng'a", 'sqi': 'rdhëije rrçlldgj-ijdhegnjzh', 'lav': 'abscā t-raķkdzhēļšanģa',
+                     'bul': 'най-ясюногщжто', 'hun': 'hűdályiokró- l eéfdzgycsklynndzso nyoyaxy', 'tur': 'yığmalılksar mveğateğwypûrtâşsmış', 'fin': 'ixlmksnngvnk- èeé aatööböyynyissä'}
+    two_way_conversion(example_words[lang])
