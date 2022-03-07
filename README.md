@@ -7,7 +7,7 @@ Provide a list of the alphabet and their corresponding phonemes. Provide also me
 
 
 ### Training a Model on an Existing Dataset:
-1. Add the file to the folder .data/RawData.
+1. Add the file to the folder `.data/RawData`.
 2. Provide g2p & p2g methods for the language, as described above.
 3. Run `generate_reinflection_datasets.py ${lang_name} ${# samples}`. This results in folders in .data/Reinflection for each POS found for the language, and also train, dev & test reinflection datasets (in 0.8-0.1-0.1 ratio) -- 3 in form-split and (if possible) 3 in lemma-split.
 4. The model works with TSV format. for that, run the script `reinflection2TSV.py ${lang_name} ${POS} ${training_mode}`.
@@ -19,5 +19,5 @@ The script produces output files in each of the folders `./Results/{Logs, Evalua
 All the above files' names include the run's parameters + time stamp, for identification.
 
 ### Testing a Model:
-Run `test_single_model.py` with the model's parameters. It loads and is applied on the dev and test sets. The results are printed to the Console and written on a "Test-Logs" file in ./Results/Logs, and the predictions are printed in ./Results/Predictions.
+Run `test_single_model.py` with the model's parameters. The script loads and applies it on the dev and test sets, and then prints the results to the Console, writes them to a "Test-Logs" file in `./Results/Logs`, and writes the predictions in `./Results/Predictions`.
 
