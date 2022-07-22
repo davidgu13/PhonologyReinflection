@@ -11,7 +11,7 @@ from editdistance import eval as edit_distance_eval
 import hyper_params_config as hp
 from run_setup import get_time_now_str, printF
 from analogies_phonology_preprocessing import combined_phonology_processor, GenericPhonologyProcessing
-from languages_setup import MAX_FEAT_SIZE, langs_properties
+from PhonologyConverter.languages_setup import MAX_FEAT_SIZE, langs_properties
 
 device = torch.device(f"cuda:{hp.device_idx}" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(hp.SEED)

@@ -1,5 +1,5 @@
 from itertools import chain
-from g2p_config import idx2feature, feature2idx, p2f_dict, f2p_dict, langs_properties, punctuations
+from PhonologyConverter.g2p_config import idx2feature, feature2idx, p2f_dict, f2p_dict, langs_properties, punctuations
 from editdistance import eval as edit_distance_eval
 
 def joinit(iterable, delimiter):
