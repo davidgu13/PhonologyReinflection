@@ -69,7 +69,7 @@ lav_p2g_dict = {**dict(zip(lav_phonemes, lav_alphabet)), **punctuations_g2p_dict
 def lav_phonemes2word(phonemes:[str]):
     return phonemes2graphemes_with_doubles(phonemes, lang='lav')
 def lav_clean_sample(x:str) -> str:
-    return x.replace('y','i').replace('í', 'ī').replace('ŗ', 'r').replace("LgSPEC8", "LGSPEC8") # replace the 3 occurences of 'í' with 'ī', and the 28 occ. of 'ŗ'
+    return x.replace('í', 'ī').replace('ŗ', 'r').replace("LgSPEC8", "LGSPEC8") # replace the 3 occurences of 'í' with 'ī', and the 28 occ. of 'ŗ'
 lav_components = [lav_g2p_dict, None, lav_phonemes2word, lav_clean_sample]
 # endregion Latvian - lav
 
@@ -176,7 +176,7 @@ def tur_phonemes2word(phonemes:[str]):
         i += 1
     return graphemes
 def tur_clean_sample(x:str) -> str:
-    return x.replace('İ', 'i').replace('i̇', 'i')
+    return x.replace('İ', 'i')
 tur_components = [tur_g2p_dict, tur_word2phonemes, tur_phonemes2word, tur_clean_sample]
 # endregion Turkish - tur
 

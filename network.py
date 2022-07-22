@@ -1,12 +1,11 @@
 import torch.nn as nn
-import utils
-from utils import torch, get_abs_offsets, postprocessBatch
+from utils import torch, srcField, trgField, device, get_abs_offsets, postprocessBatch
 import random
 import hyper_params_config as hp
 from languages_setup import MAX_FEAT_SIZE
 torch.manual_seed(hp.SEED)
 
-def print_readable_tensor(x): print([utils.srcField.vocab.itos[i] for i in x]) # used for debugging purposes
+def print_readable_tensor(x): print([srcField.vocab.itos[i] for i in x]) # used for debugging purposes
 
 class Encoder(nn.Module):
     def __init__(self, input_size, embedding_size, hidden_size, num_layers, p):
@@ -14,7 +13,7 @@ class Encoder(nn.Module):
         self.hidden_size = hidden_size
         self.num_layers = num_layers
 
-        self.embedding = nn.Embedding(input_size, embedding_size, padding_idx=utils.srcField.vocab.stoi['<pad>'])
+        self.embedding = nn.Embedding(input_size, embedding_size, padding_idx=srcField.vocab.stoi['<pad>'])
 
         self.input_size=input_size
         self.embedding_size = embedding_size
@@ -32,7 +31,7 @@ class Encoder(nn.Module):
 
         embedding = self.embedding(x)
         if hp.PHON_UPGRADED:
-            phon_delim, pad_idx = [utils.srcField.vocab.stoi[e] for e in ['$','<pad>']]
+            phon_delim, pad_idx = [srcField.vocab.stoi[e] for e in ['$','<pad>']]
             iter_embeds = embedding.permute(1,0,2)
             new_embs = []
 
@@ -69,7 +68,7 @@ class Encoder(nn.Module):
             if len(set(lens))>1: # if all updated sequences have same lengths, skip the following part.
                 # Find the maximal new length, and pad the new batch with embeddings of <pad>
                 max_len = max(lens)
-                with torch.no_grad(): pad_token_embedding = self.embedding(torch.tensor([[pad_idx]], device=utils.device)).squeeze(0)
+                with torch.no_grad(): pad_token_embedding = self.embedding(torch.tensor([[pad_idx]], device=device)).squeeze(0)
                 for i,new_mat in enumerate(new_embs):
                     if new_mat.shape[0] < max_len:
                         new_embs[i] = torch.cat((new_mat, pad_token_embedding.repeat((max_len-new_mat.shape[0]),1) ))
@@ -156,9 +155,9 @@ class Seq2Seq(nn.Module):
     def forward(self, source, target, teacher_force_ratio=0.5):
         batch_size = source.shape[1]
         target_len = target.shape[0]
-        target_vocab_size = len(utils.trgField.vocab)
+        target_vocab_size = len(trgField.vocab)
 
-        outputs = torch.zeros(target_len, batch_size, target_vocab_size).to(utils.device)
+        outputs = torch.zeros(target_len, batch_size, target_vocab_size).to(device)
         encoder_states, hidden, cell = self.encoder(source)
 
         # First input will be <SOS> token

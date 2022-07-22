@@ -77,7 +77,7 @@ class LanguageSetup:
             for p in phonemes:
                 feats = [str(feature2idx[e]) for e in p2f_dict[p]]
                 feats.extend(['NA']*(MAX_FEAT_SIZE-len(feats)))
-                if hp.PHON_USE_ATTENTION:
+                if PHON_USE_ATTENTION:
                     feats.append(p)
                 features.append(tuple(feats))
             features = tuple_of_phon_tuples2phon_sequence(features)
@@ -98,7 +98,7 @@ class LanguageSetup:
             else:
                 graphemes = [self._phonemes2graphemes[p] for p in phonemes]
         else: # mode=='features'
-            if hp.PHON_USE_ATTENTION:
+            if PHON_USE_ATTENTION:
                 phoneme_tokens = [f_tuple[-1] for f_tuple in phonemes]
             else:
                 phoneme_tokens = []
@@ -112,7 +112,7 @@ class LanguageSetup:
 
 # For debugging purposes:
 def two_way_conversion(w):
-    print(f"PHON_USE_ATTENTION, lang = {hp.PHON_USE_ATTENTION}, '{hp.lang}'")
+    print(f"PHON_USE_ATTENTION, lang = {PHON_USE_ATTENTION}, '{lang}'")
     print(f"w = {w}")
     ps = langPhonology.word2phonemes(w, mode='phonemes')
     feats = langPhonology.word2phonemes(w, mode='features')
@@ -127,14 +127,15 @@ def two_way_conversion(w):
 
 # Change this to True only when debugging the g2p/p2g conversions!
 debugging_mode = False
-import hyper_params_config as hp
 if debugging_mode:
-    hp.PHON_USE_ATTENTION, hp.lang = False, 'fin'
-MAX_FEAT_SIZE = max([len(p2f_dict[p]) for p in langs_properties[hp.lang][0].values() if p in p2f_dict]) # composite phonemes aren't counted in that list
-langPhonology = LanguageSetup(hp.lang, langs_properties[hp.lang][0], langs_properties[hp.lang][1], langs_properties[hp.lang][2])
+    PHON_USE_ATTENTION, lang = False, 'fin'
+else:
+    from hyper_params_config import PHON_USE_ATTENTION, lang
+MAX_FEAT_SIZE = max([len(p2f_dict[p]) for p in langs_properties[lang][0].values() if p in p2f_dict]) # composite phonemes aren't counted in that list
+langPhonology = LanguageSetup(lang, langs_properties[lang][0], langs_properties[lang][1], langs_properties[lang][2])
 
 if __name__ == '__main__':
     # made-up words to test the correctness of the g2p/p2g conversions algorithms (for debugging purposes):
     example_words = {'kat': 'არ მჭირდ-ებოდყეტ', 'swc': "magnchdhe-ong jwng'a", 'sqi': 'rdhëije rrçlldgj-ijdhegnjzh', 'lav': 'abscā t-raķkdzhēļšanģa',
                      'bul': 'най-ясюногщжто', 'hun': 'hűdályiokró- l eéfdzgycsklynndzso nyoyaxy', 'tur': 'yığmalılksar mveğateğwypûrtâşsmış', 'fin': 'ixlmksnngvnk- èeé aatööböyynyissä'}
-    two_way_conversion(example_words[hp.lang])
+    two_way_conversion(example_words[lang])
