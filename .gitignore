@@ -5,6 +5,7 @@ Results/
 runs_scripts/
 .idea/
 *.sh
+*.xlsx
 extract_results_from_logs.py
 /generate_run_files/
 

@@ -28,7 +28,7 @@ parser.add_argument('out_phon_type', type=str, choices=['g','p','f'], help="Phon
 parser.add_argument('analogy_type', type=str, choices=['src1_cross1', 'None'], help='The analogies type to be applied', nargs='?', default='None')
 parser.add_argument('SEED', type=int, help='Initial seed for all random operations', nargs='?', default=42)
 parser.add_argument('device_idx', type=str, help='GPU index', nargs='?', default='0')
-parser.add_argument('--ATTN', action='store_true', help="If True and inp_phon_type=='f', input features are combined in a Self-Attention layer to form a single vector.", default=True)
+parser.add_argument('--ATTN', action='store_true', help="If True and inp_phon_type=='f', input features are combined in a Self-Attention layer to form a single vector.", default=False)
 args = parser.parse_args()
 lang, POS, SEED, device_idx = args.lang, args.POS, args.SEED, args.device_idx
 analogy_type = args.analogy_type
