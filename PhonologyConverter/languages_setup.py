@@ -133,18 +133,17 @@ class LanguageSetup:
                    langs_properties[language][2])
 
 # For debugging purposes:
-def two_way_conversion(w):
-    print(f"PHON_USE_ATTENTION, lang = {hp.PHON_USE_ATTENTION}, '{hp.lang}'")
-    print(f"w = {w}")
-    ps = langPhonology.word2phonemes(w, mode='phonemes')
-    feats = langPhonology.word2phonemes(w, mode='features')
-    print(f"phonemes = {ps}\nfeatures = {feats}")
+def two_way_conversion(w, lang_phonology: LanguageSetup):
+    print(f"PHON_USE_ATTENTION = {hp.PHON_USE_ATTENTION}, lang = '{hp.lang}'\nw = {w}")
 
-    p2word = langPhonology.phonemes2word(ps, mode='phonemes')
+    phons = lang_phonology.word2phonemes(w, mode='phonemes')
+    feats = lang_phonology.word2phonemes(w, mode='features')
+    print(f"phonemes = {phons}\nfeatures = {feats}")
+
+    p2word = lang_phonology.phonemes2word(phons, mode='phonemes')
     print(f"p2word: {p2word}\nED(w, p2word) = {edit_distance_eval(w, p2word)}")
 
-    feats = [f.split(',') for f in ','.join(feats).split(',$,')]
-    f2word = langPhonology.phonemes2word(feats, mode='features')
+    f2word = lang_phonology.phonemes2word(feats, mode='features')
     print(f"f2word: {f2word}\nED(w, f2word) = {edit_distance_eval(w, f2word)}")
 
 # Change this to True only when debugging the g2p/p2g conversions!
@@ -159,4 +158,4 @@ if __name__ == '__main__':
     # made-up words to test the correctness of the g2p/p2g conversions algorithms (for debugging purposes):
     example_words = {'kat': 'არ მჭირდ-ებოდყეტ', 'swc': "magnchdhe-ong jwng'a", 'sqi': 'rdhëije rrçlldgj-ijdhegnjzh', 'lav': 'abscā t-raķkdzhēļšanģa',
                      'bul': 'най-ясюногщжто', 'hun': 'hűdályiokró- l eéfdzgycsklynndzso nyoyaxy', 'tur': 'yığmalılksar mveğateğwypûrtâşsmış', 'fin': 'ixlmksnngvnk- èeé aatööböyynyissä'}
-    two_way_conversion(example_words[hp.lang])
+    two_way_conversion(example_words[hp.lang], langPhonology)
