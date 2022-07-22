@@ -3,7 +3,7 @@ import utils
 from utils import torch, get_abs_offsets, postprocessBatch
 import random
 import hyper_params_config as hp
-from languages_setup import MAX_FEAT_SIZE
+from PhonologyConverter.languages_setup import MAX_FEAT_SIZE
 torch.manual_seed(hp.SEED)
 
 def print_readable_tensor(x): print([utils.srcField.vocab.itos[i] for i in x]) # used for debugging purposes

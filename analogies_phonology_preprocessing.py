@@ -1,6 +1,6 @@
 import os
 from more_itertools import flatten
-from languages_setup import langPhonology, LanguageSetup, joinit
+from PhonologyConverter.languages_setup import langPhonology, LanguageSetup, joinit
 from data2samples_converter import Data2SamplesConverter
 import hyper_params_config as hp
 
