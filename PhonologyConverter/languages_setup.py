@@ -72,7 +72,7 @@ class LanguageSetup:
             features = tuple_of_phon_tuples2phon_sequence(features)
             return features
 
-    def phonemes2word(self, phonemes: [[str]], mode:str) -> str:
+    def _phonemes2word(self, phonemes: [[str]], mode:str) -> str:
         """
         Convert a list of phoneme tuples to a word (sequence of graphemes)
         :param phonemes: [(,,), (,,), (,,), ...] or (*IPA symbols*)
@@ -96,8 +96,41 @@ class LanguageSetup:
                     p = f2p_dict.get(f_tuple)
                     if p is None or p not in self._phonemes: p = "#" # the predicted bundle is illegal or doesn't exist in this language
                     phoneme_tokens.append(p)
-            graphemes = self.phonemes2word(phoneme_tokens, 'phonemes')
+            graphemes = self._phonemes2word(phoneme_tokens, 'phonemes')
         return ''.join(graphemes)
+
+    def phonemes2word(self, sequence: Union[List[str], Tuple[str]], mode:str) -> str:
+        """
+        Wrapper for _phonemes2word.
+        sequence is list, of either features (['1', '2', '3', '$', '4', '5', 'NA', '$', ...]),
+        phonemes (['p', 't', 'o:', ...]), or combined (['1', '2', '3', 'p', '$', '4', '5', 'NA', 'o:', '$', ...])
+        """
+        assert mode in {'features', 'phonemes'}, f"Mode {mode} is invalid"
+
+        if mode == 'features':
+            if sequence == () or sequence == []: return '' # edge case: empty prediction
+            if sequence[-1] == '$': sequence = sequence[:-1] # ignore '$' at the prediction's end.
+            comma_separated_phonemes_list = ','.join(sequence).split(',$,')
+            if self.manual_phonemes2word and self.phon_use_attention:
+                new_sequence = self._phonemes2word([e.split(',')[-1] for e in comma_separated_phonemes_list], mode='phonemes')
+            else:
+                new_sequence = self._phonemes2word([p.split(',') for p in comma_separated_phonemes_list], mode='features')
+        else: # mode=='phonemes'
+            new_sequence = self._phonemes2word(sequence, mode='phonemes')
+
+        return new_sequence
+
+    @classmethod
+    def create_phonology_converter(cls, language: str, phon_use_attention: bool = False):
+        # Calculating and instantiating the dynamic objects
+        max_feat_size = max([len(p2f_dict[p]) for p in langs_properties[language][0].values() if p in p2f_dict])  # composite phonemes aren't counted in that list
+
+        return cls(language,
+                   langs_properties[language][0],
+                   max_feat_size,
+                   phon_use_attention,
+                   langs_properties[language][1],
+                   langs_properties[language][2])
 
 # For debugging purposes:
 def two_way_conversion(w):
