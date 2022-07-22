@@ -5,11 +5,12 @@ import torch.optim as optim
 from torch.nn import CrossEntropyLoss
 from torch.nn.utils import clip_grad_norm_
 from torchtext.legacy.data import BucketIterator, TabularDataset
+from editdistance import eval as edit_distance_eval
 
 import hyper_params_config as hp
 from run_setup import train_file, dev_file, test_file, model_checkpoints_folder, model_checkpoint_file, predictions_file, \
     hyper_params_to_print, summary_writer, evaluation_graphs_file, get_time_now_str, user_params_with_time_stamp, printF
-from utils import translate_sentence, bleu, save_checkpoint, load_checkpoint, srcField, trgField, device, plt, editDistance
+from utils import translate_sentence, bleu, save_checkpoint, load_checkpoint, srcField, trgField, device, plt
 from analogies_phonology_preprocessing import combined_phonology_processor, is_features_bundle
 from network import Encoder, Decoder, Seq2Seq
 
@@ -125,7 +126,7 @@ def main():
             if translated_sent[-1]=='<eos>':
                 translated_sent = translated_sent[:-1]
             src, trg, pred = ex.src, ex.trg, translated_sent # all the outputs are [str]; represents phonological stuff only if hp.out_phon_type!='graphemes'
-            phon_ed = editDistance(trg, pred)
+            phon_ed = edit_distance_eval(trg, pred)
             src_print, trg_print, pred_print = show_readable_triplet(src, trg, pred)
             printF(f"{i}. input: {src_print} ; gold: {trg_print} ; pred: {pred_print} ; ED = {phon_ed}")
 
@@ -138,7 +139,7 @@ def main():
             if hp.inp_phon_type!='graphemes' or hp.out_phon_type!='graphemes':
                 src_morph, trg_morph, pred_morph = combined_phonology_processor.phon_elements2morph_elements_generic(src, trg, pred)
                 if hp.out_phon_type!='graphemes': # another evaluation metric is needed; the source format is irrelevant
-                    morph_ed_print = editDistance(trg_morph, pred_morph)
+                    morph_ed_print = edit_distance_eval(trg_morph, pred_morph)
                     printF(f"{i}. input_morph: {src_morph} ; gold_morph: {trg_morph} ; pred_morph: {pred_morph} ; morphlvl_ED = {morph_ed_print}\n")
                 else:
                     printF(f"{i}. input_morph: {src_morph} ; gold_morph: {''.join(trg_morph)} ; pred_morph: {''.join(pred_morph)}\n")

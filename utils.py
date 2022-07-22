@@ -6,6 +6,7 @@ from torchtext.legacy.data import Field
 from copy import deepcopy
 from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
+from editdistance import eval as edit_distance_eval
 
 import hyper_params_config as hp
 from run_setup import get_time_now_str, printF
@@ -129,7 +130,7 @@ def bleu(data, model, german:Field, english:Field, device, converter:GenericPhon
 
     # Count also Accuracy. Ignore <eos>, obviously.
 
-    accs, EDs = zip(*[(t == o, editDistance(t, o)) for t, o in zip(targets, outputs)])
+    accs, EDs = zip(*[(t == o, edit_distance_eval(t, o)) for t, o in zip(targets, outputs)])
     acc, res = np.mean(accs), np.mean(EDs)
 
     if converter is not None:
@@ -140,7 +141,7 @@ def bleu(data, model, german:Field, english:Field, device, converter:GenericPhon
             morph_targets.append(trg_morph)
             morph_outputs.append(pred_morph)
 
-        morph_accs, morph_EDs = zip(*[(t==o, editDistance(t, o)) for t,o in zip(morph_targets, morph_outputs)])
+        morph_accs, morph_EDs = zip(*[(t==o, edit_distance_eval(t, o)) for t,o in zip(morph_targets, morph_outputs)])
         morph_acc, morph_res = np.mean(morph_accs), np.mean(morph_EDs)
         if output_file:
             write_predictions(output_file, morph_targets, morph_outputs, morph_accs, morph_EDs, sources=sources, phon_accs=accs, phon_eds=EDs, phon_targets=targets, phon_preds=outputs)
@@ -188,22 +189,6 @@ def load_checkpoint(checkpoint, model, optimizer, verbose=True):
     if verbose: printF("=> Loading checkpoint")
     model.load_state_dict(checkpoint["state_dict"])
     optimizer.load_state_dict(checkpoint["optimizer"])
-
-def editDistance(str1, str2):
-    """Simple Levenshtein implementation"""
-    table = np.zeros([len(str2) + 1, len(str1) + 1])
-    for i in range(1, len(str2) + 1):
-        table[i][0] = table[i - 1][0] + 1
-    for j in range(1, len(str1) + 1):
-        table[0][j] = table[0][j - 1] + 1
-    for i in range(1, len(str2) + 1):
-        for j in range(1, len(str1) + 1):
-            if str1[j - 1] == str2[i - 1]:
-                dg = 0
-            else:
-                dg = 1
-            table[i][j] = min(table[i - 1][j] + 1, table[i][j - 1] + 1, table[i - 1][j - 1] + dg)
-    return int(table[len(str2)][len(str1)])
 
 def showAttention(input_sentence, output_words, attentions, fig_name="Attention Weights.png"):
     # Set up figure with colorbar
