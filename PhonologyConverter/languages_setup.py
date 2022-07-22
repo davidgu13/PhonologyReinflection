@@ -1,6 +1,8 @@
 from itertools import chain
-from PhonologyConverter.g2p_config import idx2feature, feature2idx, p2f_dict, f2p_dict, langs_properties, punctuations
 from editdistance import eval as edit_distance_eval
+from typing import List, Union, Tuple
+
+from PhonologyConverter.g2p_config import idx2feature, feature2idx, p2f_dict, f2p_dict, langs_properties, punctuations
 
 def joinit(iterable, delimiter):
     # Inserts delimiters between elements of some iterable object.
@@ -20,7 +22,8 @@ class LanguageSetup:
     Note: the class is implemented to fit to Georgian, Russian and several Indo-European languages. For languages with more complex phonology,
     this class might need to be extended/be inherited from.
     """
-    def __init__(self, lang_name: str, graphemes2phonemes:dict, manual_word2phonemes=None, manual_phonemes2word=None):
+    def __init__(self, lang_name: str, graphemes2phonemes:dict, max_phoneme_size: int,
+                 phon_use_attention: bool, manual_word2phonemes=None, manual_phonemes2word=None):
         self._name = lang_name
         self._graphemes2phonemes = graphemes2phonemes
         self._graphemes2phonemes.update(dict(zip(punctuations, punctuations)))
@@ -32,11 +35,14 @@ class LanguageSetup:
         self._manual_word2phonemes = manual_word2phonemes
         self.manual_phonemes2word = manual_phonemes2word
 
+        self.max_phoneme_size = max_phoneme_size
+        self.phon_use_attention = phon_use_attention
+
     def get_lang_name(self): return self._name
     def get_lang_alphabet(self): return self._alphabet
     def get_lang_phonemes(self): return self._phonemes
 
-    def word2phonemes(self, word:str, mode:str) -> [[int]]:
+    def word2phonemes(self, word:str, mode:str) -> Union[List[List[int]], List[str]]:
         """
         Convert a word (sequence of graphemes) to a list of phoneme tuples.
         :param word: word
@@ -59,8 +65,8 @@ class LanguageSetup:
             features=[]
             for p in phonemes:
                 feats = [str(feature2idx[e]) for e in p2f_dict[p]]
-                feats.extend(['NA']*(MAX_FEAT_SIZE-len(feats)))
-                if hp.PHON_USE_ATTENTION:
+                feats.extend(['NA']*(self.max_phoneme_size-len(feats)))
+                if self.phon_use_attention:
                     feats.append(p)
                 features.append(tuple(feats))
             features = tuple_of_phon_tuples2phon_sequence(features)
@@ -81,12 +87,12 @@ class LanguageSetup:
             else:
                 graphemes = [self._phonemes2graphemes[p] for p in phonemes]
         else: # mode=='features'
-            if hp.PHON_USE_ATTENTION:
+            if self.phon_use_attention:
                 phoneme_tokens = [f_tuple[-1] for f_tuple in phonemes]
             else:
                 phoneme_tokens = []
                 for f_tuple in phonemes:
-                    f_tuple = tuple(idx2feature[int(i)] for i in f_tuple if i != 'NA')
+                    f_tuple = tuple([idx2feature[int(i)] for i in f_tuple if i != 'NA'])
                     p = f2p_dict.get(f_tuple)
                     if p is None or p not in self._phonemes: p = "#" # the predicted bundle is illegal or doesn't exist in this language
                     phoneme_tokens.append(p)
