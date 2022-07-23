@@ -27,7 +27,7 @@ def phon_extended_src_preprocess(x: [str]) -> [str]:
     if hp.inp_phon_type=='graphemes':
         return x # do nothing
     else:
-        new_x, _ = combined_phonology_processor.line2phon_line_generic(','.join(x), '', convert_trg=False)
+        new_x, _ = phonology_decorator.line2phon_line(','.join(x), '')
         return new_x
 
 def phon_extended_trg_preprocess(x: [str]) -> [str]:
@@ -36,7 +36,7 @@ def phon_extended_trg_preprocess(x: [str]) -> [str]:
     if hp.out_phon_type=='graphemes':
         return x # do nothing
     else:
-        _, new_x = combined_phonology_processor.line2phon_line_generic('', ','.join(x), convert_src=False)
+        _, new_x = phonology_decorator.line2phon_line('', ','.join(x))
         return new_x
 
 preprocess_methods_extended = {'src': phon_extended_src_preprocess, 'trg': phon_extended_trg_preprocess}
@@ -136,7 +136,7 @@ def bleu(data, model, german:Field, english:Field, device, converter:PhonologyDe
     if converter is not None:
         # Calculate acc + ed on morphological conversions
         for s,t,o in zip(sources, targets, outputs):
-            src_morph, trg_morph, pred_morph = converter.phon_elements2morph_elements_generic(s, t, o)
+            src_morph, trg_morph, pred_morph = converter.phon_sample2morph_sample(s, t, o)
             # morph_sources.append(src_morph)
             morph_targets.append(trg_morph)
             morph_outputs.append(pred_morph)

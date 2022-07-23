@@ -11,7 +11,7 @@ import hyper_params_config as hp
 from run_setup import train_file, dev_file, test_file, model_checkpoints_folder, model_checkpoint_file, predictions_file, \
     hyper_params_to_print, summary_writer, evaluation_graphs_file, get_time_now_str, user_params_with_time_stamp, printF
 from utils import translate_sentence, bleu, save_checkpoint, load_checkpoint, srcField, trgField, device, plt
-from analogies_phonology_preprocessing import combined_phonology_processor, is_features_bundle
+from analogies_phonology_preprocessing import phonology_decorator, is_features_bundle
 from network import Encoder, Decoder, Seq2Seq
 
 def show_readable_triplet(src, trg, pred):
@@ -137,7 +137,7 @@ def main():
 
             # Convert non-graphemic formats to words
             if hp.inp_phon_type!='graphemes' or hp.out_phon_type!='graphemes':
-                src_morph, trg_morph, pred_morph = combined_phonology_processor.phon_elements2morph_elements_generic(src, trg, pred)
+                src_morph, trg_morph, pred_morph = phonology_decorator.phon_sample2morph_sample(src, trg, pred)
                 if hp.out_phon_type!='graphemes': # another evaluation metric is needed; the source format is irrelevant
                     morph_ed_print = edit_distance_eval(trg_morph, pred_morph)
                     printF(f"{i}. input_morph: {src_morph} ; gold_morph: {trg_morph} ; pred_morph: {pred_morph} ; morphlvl_ED = {morph_ed_print}\n")
@@ -146,7 +146,7 @@ def main():
 
 
         if hp.PHON_REEVALUATE:
-            ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, converter=combined_phonology_processor, output_file=predictions_file)
+            ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(dev_data, model, srcField, trgField, device, converter=phonology_decorator, output_file=predictions_file)
             summary_writer.add_scalar("Dev set Phon-Accuracy", accuracy_phon, global_step=epoch)
             extra_str = f"; avgED_phon = {ED_phon}; avgAcc_phon = {accuracy_phon}"
             accs_phon.append(accuracy_phon)
@@ -187,7 +187,7 @@ def main():
         printF(f"Applying model on {'dev' if test_set==dev_data else 'test'} set")
         # test_set = test_data
         if hp.PHON_REEVALUATE:
-            ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(test_set, model, srcField, trgField, device, converter=combined_phonology_processor, output_file=predictions_file)
+            ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(test_set, model, srcField, trgField, device, converter=phonology_decorator, output_file=predictions_file)
             if test_set == dev_data: assert [ED_phon, accuracy_phon, ED_morph, accuracy_morph] == best_measures[:-1] # sanity check
             printF(f"Phonological level: ED score on dev set is {ED_phon}. Avg-Accuracy is {accuracy_phon}.")
         else:
