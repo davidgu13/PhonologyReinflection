@@ -10,20 +10,9 @@ def is_features_bundle(e):
     else:
         return str.isupper(e) and hp.POS in e # assuming no lower-case features exist in other languages.
 
-def remove_double_dollars(sequence: List[str]):
-    # used during the conversion to graphemes-mode
-    if sequence[-1]=='$': del sequence[-1] # because it's irrelevant for the morphological evaluation
-    if sequence[0]=='$': del sequence[0]
-    # Removing unwanted commas and dollars from each token:
-    s = ','.join(sequence).split(',$,')
-    s = [e.strip(',$') for e in s]
-    stripped_seq = ',$,'.join(s).split(',') # if there aren't any '$' issues, stripped_seq==seq
-    return stripped_seq
-
 class PhonologyDecorator:
     # Implements phonology logic while accounting for Analogies format. Use it only if the input & output aren't both graphemes
     def __init__(self, phonology_converter: LanguageSetup):
-        super().__init__()
         self.phonology_converter = phonology_converter
 
     def morph_line2phon_line(self, src_list: str, trg_form: str):
@@ -31,8 +20,8 @@ class PhonologyDecorator:
         Takes src_list and trg_form, and converts their words to a phonological representation - one of the 3 options.
         If one of them is '', then it's returned as is.
         Used for preprocessing.
-        :param src_list: a string of the format 'e1,+,e2,+,...,+,en', where e_i can be either a features bundle or a word (comma-separated as-well)
-        :param trg_form:
+        :param src_list: a string of the format 'e1,+,e2,+,...,+,en', where e_i can be either a features bundle or a word (comma-separated as-well).
+        :param trg_form: the target form, comma-separated.
         :return:
         """
         if src_list:
