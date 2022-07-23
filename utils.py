@@ -10,7 +10,7 @@ from editdistance import eval as edit_distance_eval
 
 import hyper_params_config as hp
 from run_setup import get_time_now_str, printF
-from analogies_phonology_preprocessing import combined_phonology_processor, GenericPhonologyProcessing
+from analogies_phonology_preprocessing import phonology_decorator, PhonologyDecorator
 from PhonologyConverter.languages_setup import MAX_FEAT_SIZE, langs_properties
 
 device = torch.device(f"cuda:{hp.device_idx}" if torch.cuda.is_available() else "cpu")
@@ -113,7 +113,7 @@ def translate_sentence(model, sentence, german, english, device, max_length=50, 
     else:
         return translated_sentence[1:]
 
-def bleu(data, model, german:Field, english:Field, device, converter:GenericPhonologyProcessing=None, output_file=''):
+def bleu(data, model, german:Field, english:Field, device, converter:PhonologyDecorator=None, output_file=''):
     sources, targets, outputs = [], [], []
     morph_sources, morph_targets, morph_outputs = [], [], [] # only necessary if phon_mode
 

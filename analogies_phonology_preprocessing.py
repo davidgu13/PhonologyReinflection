@@ -20,7 +20,7 @@ def remove_double_dollars(sequence:[str]):
     stripped_seq = ',$,'.join(s).split(',') # if there aren't any '$' issues, stripped_seq==seq
     return stripped_seq
 
-class GenericPhonologyProcessing(Data2SamplesConverter):
+class PhonologyDecorator:
     # Implements phonology logic while accounting for Analogies format. Use it only if the input & output aren't both graphemes
     def __init__(self, phonology: LanguageSetup):
         super().__init__()
@@ -109,8 +109,7 @@ class GenericPhonologyProcessing(Data2SamplesConverter):
 
     # Do not implement a method for writing the processed data to files! Make sure to only use it at the preprocessing part!
 
-
-combined_phonology_processor = GenericPhonologyProcessing(langPhonology)
+phonology_decorator = PhonologyDecorator(langPhonology)
 
 if __name__ == '__main__':
     # For debugging purposes
