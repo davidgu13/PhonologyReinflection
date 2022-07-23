@@ -1,7 +1,6 @@
 import os
 from more_itertools import flatten
 from PhonologyConverter.languages_setup import langPhonology, LanguageSetup, joinit
-from data2samples_converter import Data2SamplesConverter
 import hyper_params_config as hp
 from typing import List
 
@@ -11,7 +10,7 @@ def is_features_bundle(e):
     else:
         return str.isupper(e) and hp.POS in e # assuming no lower-case features exist in other languages.
 
-def remove_double_dollars(sequence:[str]):
+def remove_double_dollars(sequence:List[str]):
     # used during the conversion to graphemes-mode
     if sequence[-1]=='$': del sequence[-1] # because it's irrelevant for the morphological evaluation
     if sequence[0]=='$': del sequence[0]
@@ -50,36 +49,21 @@ class PhonologyDecorator:
 
         if trg_form:
             trg_form = trg_form.replace(',','')
-            new_trg_form = self.phonology_obj.word2phonemes(trg_form, mode=hp.out_phon_type)
-        return new_src_list, new_trg_form
-
-
-    def _phon_sequence2word_extended(self, sequence, mode) -> str:
-        # Handle target and prediction sequences.
-        assert mode in {'features', 'phonemes'}
-        if mode=='features': # type(sequence)==str
-            phon_feats = sequence.split(',$,') # cannot handle more than 2 following '$' chars in a row. Not an issue for now.
-            if self.phonology_obj.manual_phonemes2word and hp.PHON_USE_ATTENTION:
-                new_sequence = self.phonology_obj.phonemes2word([e.split(',')[-1] for e in phon_feats], mode='phonemes')
-            else:
-                new_sequence = self.phonology_obj.phonemes2word([p.split(',') for p in phon_feats], mode='features')
-        else: # mode=='phonemes' => type(sequence)==[str]
-            new_sequence = self.phonology_obj.phonemes2word(sequence, mode='phonemes')
-        return new_sequence
+            new_trg_form = self.phonology_converter.word2phonemes(trg_form, mode=hp.out_phon_type)
+        else:
+            new_trg_form = trg_form
 
         return new_src_list, new_trg_form
 
     def _phon_src2word_src(self, src_phon: List[str], mode: str):
         # Handle the source string
-        assert src_phon.count(',+,') >= 2 # at least 3 elements
-        elements, new_src_list = src_phon.split(',+,'), []
+        elements, new_src_list = ','.join(src_phon).split(',+,'), []
+        assert len(elements) >= 2 # at least 3 elements
         for e in elements:
-            if '$' in e: # 'features'
-                new_e = self._phon_sequence2word_extended(e, mode='features')
-            elif set(e.split(',')).issubset(self.phonology_obj.get_lang_phonemes()): # 'phonemes'
-                new_e = self._phon_sequence2word_extended(e.split(','), mode='phonemes')
-            else: # a string of morphological features
+            if is_features_bundle(e):
                 new_e = e.replace(',',';')
+            else: # a word in 'features' or 'phonemes' mode
+                new_e = self.phonology_converter.phonemes2word(e.split(','), mode)
             new_src_list.append(new_e)
         return new_src_list
 
@@ -104,7 +88,6 @@ class PhonologyDecorator:
             new_pred = self.phonology_converter.phonemes2word(pred, out_mode) # convert to words (graphemes)
         return new_src, new_trg, new_pred
 
-    # Do not implement a method for writing the processed data to files! Make sure to only use it at the preprocessing part!
 
 phonology_decorator = PhonologyDecorator(langPhonology)
 
