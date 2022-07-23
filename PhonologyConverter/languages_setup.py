@@ -153,31 +153,14 @@ class LanguageSetup:
                    langs_properties[language][1],
                    langs_properties[language][2])
 
-# For debugging purposes:
-def two_way_conversion(w, lang_phonology: LanguageSetup):
-    print(f"PHON_USE_ATTENTION = {hp.PHON_USE_ATTENTION}, lang = '{hp.lang}'\nw = {w}")
-
-    phons = lang_phonology.word2phonemes(w, mode='phonemes')
-    feats = lang_phonology.word2phonemes(w, mode='features')
-    print(f"phonemes = {phons}\nfeatures = {feats}")
-
-    p2word = lang_phonology.phonemes2word(phons, mode='phonemes')
-    print(f"p2word: {p2word}\nED(w, p2word) = {edit_distance_eval(w, p2word)}")
-
-    f2word = lang_phonology.phonemes2word(feats, mode='features')
-    print(f"f2word: {f2word}\nED(w, f2word) = {edit_distance_eval(w, f2word)}")
-
+# Note the UTs for this code. Don't hesitate to improve them as well!
 # Change this to True only when debugging the g2p/p2g conversions!
 debugging_mode = False
 import hyper_params_config as hp
 if debugging_mode:
     hp.PHON_USE_ATTENTION, hp.lang = False, 'fin'
-MAX_FEAT_SIZE = max([len(p2f_dict[p]) for p in langs_properties[hp.lang][0].values() if p in p2f_dict]) # composite phonemes aren't counted in that list
-langPhonology = LanguageSetup(hp.lang, langs_properties[hp.lang][0], MAX_FEAT_SIZE, hp.PHON_USE_ATTENTION
-                              , langs_properties[hp.lang][1], langs_properties[hp.lang][2])
 
-if __name__ == '__main__':
-    # made-up words to test the correctness of the g2p/p2g conversions algorithms (for debugging purposes):
-    example_words = {'kat': 'არ მჭირდ-ებოდყეტ', 'swc': "magnchdhe-ong jwng'a", 'sqi': 'rdhëije rrçlldgj-ijdhegnjzh', 'lav': 'abscā t-raķkdzhēļšanģa',
-                     'bul': 'най-ясюногщжто', 'hun': 'hűdályiokró- l eéfdzgycsklynndzso nyoyaxy', 'tur': 'yığmalılksar mveğateğwypûrtâşsmış', 'fin': 'ixlmksnngvnk- èeé aatööböyynyissä'}
-    two_way_conversion(example_words[hp.lang], langPhonology)
+MAX_FEAT_SIZE = max([len(p2f_dict[p]) for p in langs_properties[hp.lang][0].values() if p in p2f_dict]) # composite phonemes aren't counted in that list
+
+langPhonology = LanguageSetup(hp.lang, langs_properties[hp.lang][0], MAX_FEAT_SIZE, hp.PHON_USE_ATTENTION,
+                              langs_properties[hp.lang][1], langs_properties[hp.lang][2])
