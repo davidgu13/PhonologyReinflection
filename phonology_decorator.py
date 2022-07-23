@@ -72,9 +72,8 @@ class PhonologyDecorator:
             new_trg = trg
             new_pred = pred
         else:
-            if out_mode=='features': pred = remove_double_dollars(pred) # TODO: move the prediction cleaning to inside phonemes2word, being optional
             new_trg = self.phonology_converter.phonemes2word(trg, out_mode) # convert to words (graphemes)
-            new_pred = self.phonology_converter.phonemes2word(pred, out_mode) # convert to words (graphemes)
+            new_pred = self.phonology_converter.phonemes2word(pred, out_mode, normalize=True) # convert to words (graphemes)
         return new_src, new_trg, new_pred
 
 
