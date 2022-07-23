@@ -10,7 +10,7 @@ def is_features_bundle(e):
     else:
         return str.isupper(e) and hp.POS in e # assuming no lower-case features exist in other languages.
 
-def remove_double_dollars(sequence:List[str]):
+def remove_double_dollars(sequence: List[str]):
     # used during the conversion to graphemes-mode
     if sequence[-1]=='$': del sequence[-1] # because it's irrelevant for the morphological evaluation
     if sequence[0]=='$': del sequence[0]
@@ -26,7 +26,7 @@ class PhonologyDecorator:
         super().__init__()
         self.phonology_converter = phonology_converter
 
-    def line2phon_line(self, src_list: str, trg_form: str):
+    def morph_line2phon_line(self, src_list: str, trg_form: str):
         """
         Takes src_list and trg_form, and converts their words to a phonological representation - one of the 3 options.
         If one of them is '', then it's returned as is.
@@ -55,7 +55,7 @@ class PhonologyDecorator:
 
         return new_src_list, new_trg_form
 
-    def _phon_src2word_src(self, src_phon: List[str], mode: str):
+    def _phon_src2morph_src(self, src_phon: List[str], mode: str):
         # Handle the source string
         elements, new_src_list = ','.join(src_phon).split(',+,'), []
         assert len(elements) >= 2 # at least 3 elements
@@ -76,7 +76,7 @@ class PhonologyDecorator:
         if inp_mode=='graphemes':
             new_src = [e.replace(',',';' if is_features_bundle(e) else '') for e in ','.join(src).split(',+,')]
         else: # 'phonemes' or 'features'
-            new_src = self._phon_src2word_src(src, inp_mode)
+            new_src = self._phon_src2morph_src(src, inp_mode)
 
         # Handle target, then handle prediction
         if out_mode=='graphemes':
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     for i, l in enumerate(lines):
         if i == 20: break
         src, trg = l.strip().split('\t')
-        new_src, new_trg = phonology_decorator.line2phon_line(src, trg)
+        new_src, new_trg = phonology_decorator.morph_line2phon_line(src, trg)
         print(f"src: {src}, trg: {trg}")
         print(f"new_src: {new_src}, new_trg: {new_trg}\n")
     # If this doesn't run, it's because in hyper_params_config.py the default I-O values are g-g.

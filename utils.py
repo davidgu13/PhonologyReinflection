@@ -27,7 +27,7 @@ def phon_extended_src_preprocess(x: [str]) -> [str]:
     if hp.inp_phon_type=='graphemes':
         return x # do nothing
     else:
-        new_x, _ = phonology_decorator.line2phon_line(','.join(x), '')
+        new_x, _ = phonology_decorator.morph_line2phon_line(','.join(x), '')
         return new_x
 
 def phon_extended_trg_preprocess(x: [str]) -> [str]:
@@ -36,7 +36,7 @@ def phon_extended_trg_preprocess(x: [str]) -> [str]:
     if hp.out_phon_type=='graphemes':
         return x # do nothing
     else:
-        _, new_x = phonology_decorator.line2phon_line('', ','.join(x))
+        _, new_x = phonology_decorator.morph_line2phon_line('', ','.join(x))
         return new_x
 
 preprocess_methods_extended = {'src': phon_extended_src_preprocess, 'trg': phon_extended_trg_preprocess}
