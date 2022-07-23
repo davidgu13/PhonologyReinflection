@@ -152,7 +152,8 @@ import hyper_params_config as hp
 if debugging_mode:
     hp.PHON_USE_ATTENTION, hp.lang = False, 'fin'
 MAX_FEAT_SIZE = max([len(p2f_dict[p]) for p in langs_properties[hp.lang][0].values() if p in p2f_dict]) # composite phonemes aren't counted in that list
-langPhonology = LanguageSetup(hp.lang, langs_properties[hp.lang][0], langs_properties[hp.lang][1], langs_properties[hp.lang][2])
+langPhonology = LanguageSetup(hp.lang, langs_properties[hp.lang][0], MAX_FEAT_SIZE, hp.PHON_USE_ATTENTION
+                              , langs_properties[hp.lang][1], langs_properties[hp.lang][2])
 
 if __name__ == '__main__':
     # made-up words to test the correctness of the g2p/p2g conversions algorithms (for debugging purposes):
