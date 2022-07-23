@@ -10,7 +10,7 @@ from editdistance import eval as edit_distance_eval
 
 import hyper_params_config as hp
 from run_setup import get_time_now_str, printF
-from analogies_phonology_preprocessing import phonology_decorator, PhonologyDecorator
+from phonology_decorator import phonology_decorator, PhonologyDecorator
 from PhonologyConverter.languages_setup import MAX_FEAT_SIZE, langs_properties
 
 device = torch.device(f"cuda:{hp.device_idx}" if torch.cuda.is_available() else "cpu")

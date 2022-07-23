@@ -11,7 +11,7 @@ import hyper_params_config as hp
 from run_setup import train_file, dev_file, test_file, model_checkpoints_folder, model_checkpoint_file, predictions_file, \
     hyper_params_to_print, summary_writer, evaluation_graphs_file, get_time_now_str, user_params_with_time_stamp, printF
 from utils import translate_sentence, bleu, save_checkpoint, load_checkpoint, srcField, trgField, device, plt
-from analogies_phonology_preprocessing import phonology_decorator, is_features_bundle
+from phonology_decorator import phonology_decorator, is_features_bundle
 from network import Encoder, Decoder, Seq2Seq
 
 def show_readable_triplet(src, trg, pred):

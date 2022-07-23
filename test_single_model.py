@@ -139,7 +139,7 @@ def test_single_model(model_file, test_logs_folder, models_folder="", device_idx
 
         test_printF(f"Applying on {name} set")
         if hp.PHON_REEVALUATE:
-            from analogies_phonology_preprocessing import phonology_decorator
+            from phonology_decorator import phonology_decorator
             ED_phon, accuracy_phon, ED_morph, accuracy_morph = bleu(test_set, model, srcField, trgField, utils.device,
                                                                     converter=phonology_decorator, output_file=test_predictions_file)
             test_printF(f"Phonological level: ED score on {name} set is {ED_phon}. Avg-Accuracy is {accuracy_phon}.")
