@@ -1,5 +1,4 @@
 from itertools import chain
-from editdistance import eval as edit_distance_eval
 import re
 from typing import List, Union, Tuple, Iterable
 
@@ -130,7 +129,10 @@ class LanguageSetup:
 
         if mode == 'features':
             if sequence == () or sequence == []: return '' # edge case: empty prediction
-            if normalize: sequence = normalize_dollars(sequence)
+
+            if normalize:
+                sequence = normalize_dollars(sequence)
+
             comma_separated_phonemes_list = ','.join(sequence).split(',$,')
             if self.manual_phonemes2word and self.phon_use_attention:
                 new_sequence = self._phonemes2word([e.split(',')[-1] for e in comma_separated_phonemes_list], mode='phonemes')
@@ -162,5 +164,4 @@ if debugging_mode:
 
 MAX_FEAT_SIZE = max([len(p2f_dict[p]) for p in langs_properties[hp.lang][0].values() if p in p2f_dict]) # composite phonemes aren't counted in that list
 
-langPhonology = LanguageSetup(hp.lang, langs_properties[hp.lang][0], MAX_FEAT_SIZE, hp.PHON_USE_ATTENTION,
-                              langs_properties[hp.lang][1], langs_properties[hp.lang][2])
+langPhonology = LanguageSetup.create_phonology_converter(hp.lang, hp.PHON_USE_ATTENTION)

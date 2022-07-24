@@ -3,17 +3,7 @@ from PhonologyConverter.languages_setup import LanguageSetup
 from editdistance import eval as edit_distance_eval
 from data import exact_match_examples, non_exact_match_examples, expected_edit_distances
 
-# TODO: Write UTs for 1-way conversions - from features to graphemes (given some lang).
-#  Use the examples below + many invalid examples, and also real-world examples
-"""
-$ $ $ $ 1 2 3 $ 3 NA NA $ NA $ 4 3 NA $ $ $ $ $  ->  [ (1,2,3) (3,NA,NA)  #  (4,3,NA) ]
-1 2 3 $ 4 5 6 $ 6 3 NA $ $ 3 NA NA $ $ $ 4 NA NA $  ->  [ (1,2,3) (4,5,6) (6,3,NA) (3,NA,NA)  #  ]
-"""
-# ('2', '10', '18', '$', '24', '29', 'NA', '$', '33', 'NA', 'NA', '$', '2', '10', '18', '$',
-# '24', '29', 'NA', '$', '33', 'NA', 'NA', '$', '26', '28', '30', '$', '2', '16', '19', '$',
-# '33', 'NA', 'NA', '$', '2', '10', '18', '$', '24', '29', 'NA', '$', '33', 'NA', 'NA', '$', '$', '33', 'NA', 'NA', '$',
-# '2', '11', '19', '$', '8', '12', '19', '$', '26', '28', '30', '$', '22', '27', 'NA', '$', '2', '16', '19')
-
+# Note: in order to run the test suite, you might need to redirect the phonemes.json path in g2p_config.py
 class PhonologyConverterTestCase(unittest.TestCase):
     def test_2_way_exact_conversions(self):
         # For kat, swc, sqi, lav & bul there should be exact match in the two-way conversions
