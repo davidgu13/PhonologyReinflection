@@ -1,17 +1,19 @@
 # The code is based on https://github.com/aladdinpersson/Machine-Learning-Collection/tree/master/ML/Pytorch/more_advanced/Seq2Seq_attention, with some adjustments ;)
+from copy import deepcopy
+
+import matplotlib.ticker as ticker
 import numpy as np
 import torch
-from torch_scatter import segment_mean_coo # super important! The link I used for installing it: https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html#quick-start
-from torchtext.legacy.data import Field
-from copy import deepcopy
-from matplotlib import pyplot as plt
-import matplotlib.ticker as ticker
 from editdistance import eval as edit_distance_eval
+from matplotlib import pyplot as plt
+from torch_scatter import \
+    segment_mean_coo  # super important! Link for installation: https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html#quick-start
+from torchtext.legacy.data import Field
 
 import hyper_params_config as hp
-from run_setup import get_time_now_str, printF
-from phonology_decorator import phonology_decorator, PhonologyDecorator
 from PhonologyConverter.languages_setup import MAX_FEAT_SIZE, langs_properties
+from phonology_decorator import PhonologyDecorator, phonology_decorator
+from run_setup import get_time_now_str, printF
 
 device = torch.device(f"cuda:{hp.device_idx}" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(hp.SEED)
@@ -23,33 +25,38 @@ trg_tokenizer = lambda x: x.split(',')
 # Also, preprocessing of g-g reinflection (the standard variation) is supported, to maintain consistency.
 def phon_extended_src_preprocess(x: [str]) -> [str]:
     # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
-    x = langs_properties[hp.lang][3](','.join(x)).split(',') # clean the data
-    if hp.inp_phon_type=='graphemes':
-        return x # do nothing
+    x = langs_properties[hp.lang][3](','.join(x)).split(',')  # clean the data
+    if hp.inp_phon_type == 'graphemes':
+        return x  # do nothing
     else:
         new_x, _ = phonology_decorator.morph_line2phon_line(','.join(x), '')
         return new_x
 
+
 def phon_extended_trg_preprocess(x: [str]) -> [str]:
     # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
     x = langs_properties[hp.lang][3](','.join(x)).split(',')
-    if hp.out_phon_type=='graphemes':
-        return x # do nothing
+    if hp.out_phon_type == 'graphemes':
+        return x  # do nothing
     else:
         _, new_x = phonology_decorator.morph_line2phon_line('', ','.join(x))
         return new_x
 
+
 preprocess_methods_extended = {'src': phon_extended_src_preprocess, 'trg': phon_extended_trg_preprocess}
-srcField = Field(tokenize=src_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=preprocess_methods_extended['src'])
-trgField = Field(tokenize=trg_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=preprocess_methods_extended['trg'])
+srcField = Field(tokenize=src_tokenizer, init_token="<sos>", eos_token="<eos>",
+                 preprocessing=preprocess_methods_extended['src'])
+trgField = Field(tokenize=trg_tokenizer, init_token="<sos>", eos_token="<eos>",
+                 preprocessing=preprocess_methods_extended['trg'])
 
 
 def get_abs_offsets(x: torch.Tensor, phon_delim, phon_max_len=MAX_FEAT_SIZE):
     # Given a 1D input tensor, finds the starting indices of all tuples that represent phonological bundles.
-    inds = torch.where(x==phon_delim)[0]
-    return torch.cat((torch.tensor([inds[0]-phon_max_len], device=device, dtype=inds.dtype), inds+1))
+    inds = torch.where(x == phon_delim)[0]
+    return torch.cat((torch.tensor([inds[0] - phon_max_len], device=device, dtype=inds.dtype), inds + 1))
 
-def postprocessBatch(src:torch.Tensor, offsets):
+
+def postprocessBatch(src: torch.Tensor, offsets):
     """
     Takes a tensor of embeddings, and averages the vectors that represent phonological features.
     :param src: a tensor of shape [seq_len, embed_size]. Represents embbedings of the sequence (Emb(x)) or the output of the Self-Attention layer (SelfAttn(Emb(x))).
@@ -57,14 +64,15 @@ def postprocessBatch(src:torch.Tensor, offsets):
     :return: The new tensor, after the averaging. It's shape is [new_seq_len, embed_size].
     """
     M, N = src.shape[0], len(offsets)
-    new_len = M-MAX_FEAT_SIZE*N
-    assert new_len>0
-    offsets -= MAX_FEAT_SIZE*torch.arange(N, device=device) #  = 3 = max_size-1 +1 (counting the phoneme index)
+    new_len = M - MAX_FEAT_SIZE * N
+    assert new_len > 0
+    offsets -= MAX_FEAT_SIZE * torch.arange(N, device=device)  # = 3 = max_size-1 +1 (counting the phoneme index)
     repeats = torch.ones(new_len, dtype=torch.long, device=device)
-    repeats[offsets] = MAX_FEAT_SIZE+1 # 4 = max_size +1
+    repeats[offsets] = MAX_FEAT_SIZE + 1  # 4 = max_size + 1
     final_offsets = torch.repeat_interleave(torch.arange(new_len, device=device), repeats)
     new_emb = segment_mean_coo(src, final_offsets)
     return new_emb
+
 
 def translate_sentence(model, sentence, german, english, device, max_length=50, return_attn=False):
     # Load german tokenizer

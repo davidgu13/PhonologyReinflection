@@ -1,12 +1,14 @@
-import torch.nn as nn
-import utils
-from utils import torch, get_abs_offsets, postprocessBatch
 import random
+import torch.nn as nn
+
 import hyper_params_config as hp
+import utils
 from PhonologyConverter.languages_setup import MAX_FEAT_SIZE
+from utils import get_abs_offsets, postprocessBatch, torch
+
 torch.manual_seed(hp.SEED)
 
-def print_readable_tensor(x): print([utils.srcField.vocab.itos[i] for i in x]) # used for debugging purposes
+def print_readable_tensor(x): print([utils.srcField.vocab.itos[i] for i in x])  # used for debugging purposes
 
 class Encoder(nn.Module):
     def __init__(self, input_size, embedding_size, hidden_size, num_layers, p):
@@ -16,11 +18,11 @@ class Encoder(nn.Module):
 
         self.embedding = nn.Embedding(input_size, embedding_size, padding_idx=utils.srcField.vocab.stoi['<pad>'])
 
-        self.input_size=input_size
+        self.input_size = input_size
         self.embedding_size = embedding_size
         if hp.PHON_USE_ATTENTION:
-                self.phon_selfAttention = nn.MultiheadAttention(self.embedding_size, num_heads=2)
-                # https://lena-voita.github.io/nlp_course/seq2seq_and_attention.html - a useful explanation of self-attention
+            self.phon_selfAttention = nn.MultiheadAttention(self.embedding_size, num_heads=2)
+            # https://lena-voita.github.io/nlp_course/seq2seq_and_attention.html - a useful explanation of self-attention
         self.rnn = nn.LSTM(embedding_size, hidden_size, num_layers, bidirectional=True)
 
         self.fc_hidden = nn.Linear(hidden_size * 2, hidden_size)
@@ -32,33 +34,35 @@ class Encoder(nn.Module):
 
         embedding = self.embedding(x)
         if hp.PHON_UPGRADED:
-            phon_delim, pad_idx = [utils.srcField.vocab.stoi[e] for e in ['$','<pad>']]
-            iter_embeds = embedding.permute(1,0,2)
+            phon_delim, pad_idx = [utils.srcField.vocab.stoi[e] for e in ['$', '<pad>']]
+            iter_embeds = embedding.permute(1, 0, 2)
             new_embs = []
 
-            for i,seq in enumerate(x.t()): # iterating over the batch samples
+            for i, seq in enumerate(x.t()):  # iterating over the batch samples
                 mat = iter_embeds[i]
-                abs_offsets = get_abs_offsets(seq, phon_delim, phon_max_len=MAX_FEAT_SIZE+1 if hp.PHON_USE_ATTENTION else MAX_FEAT_SIZE)
+                abs_offsets = get_abs_offsets(seq, phon_delim,
+                                              phon_max_len=MAX_FEAT_SIZE + 1 if hp.PHON_USE_ATTENTION else MAX_FEAT_SIZE)
                 if hp.PHON_USE_ATTENTION:
-                    res_vecs, vecs_indices = [], torch.cat([torch.arange(o,o+MAX_FEAT_SIZE+1) for o in abs_offsets], dim=0)
-                    phon_vecs = mat[vecs_indices] # get all the phonological vector-triplets and assign them to phon_vecs
-                    vec_triplets = torch.split(phon_vecs, MAX_FEAT_SIZE+1, dim=0) # splitting to a tuple of triplets
-                    for triplet in vec_triplets: # iterating over all the phonemes of the sample. Couldn't parallelize this part
-                        triplet = triplet.unsqueeze(1) # shape = [MAX_FEAT+1, 1, embed_size]
+                    res_vecs, vecs_indices = [], torch.cat([torch.arange(o, o + MAX_FEAT_SIZE + 1) for o in abs_offsets], dim=0)
+                    phon_vecs = mat[vecs_indices]  # get all the phonological vector-triplets and assign them to phon_vecs
+                    vec_triplets = torch.split(phon_vecs, MAX_FEAT_SIZE + 1, dim=0)  # splitting to a tuple of triplets
+
+                    for triplet in vec_triplets:  # iterating over all the phonemes of the sample. Couldn't parallelize this part
+                        triplet = triplet.unsqueeze(1)  # shape = [MAX_FEAT + 1, 1, embed_size]
 
                         # Now, use the last vector (E['t͡sʰ']) as the query of the self-attention
-                        features, phoneme = triplet[:-1], triplet[-1, None] # shapes =  [MAX_FEAT, 1, embed_size], [1, 1, embed_size]. [.., None] <=> unsqueeze
+                        features, phoneme = triplet[:-1], triplet[-1, None]  # shapes = [MAX_FEAT, 1, embed_size], [1, 1, embed_size] ([.., None] <=> unsqueeze)
 
-                        # t, _ = self.phon_selfAttention(triplet, triplet, triplet)
-                        t, _ = self.phon_selfAttention(query=phoneme, key=features, value=features) # shape = [1, 1, embed_size] (same as query)
-                        t=t.squeeze(1)
+                        t, _ = self.phon_selfAttention(query=phoneme, key=features,
+                                                       value=features)  # shape = [1, 1, embed_size] (same as query)
+                        t = t.squeeze(1)
                         # Finally, we need to reduce the sequence length to the new one, where every phoneme is
                         # represented by the single vector t. In practice, it's done more efficiently later inside postprocessBatch.
 
                         # t_with_zeros = torch.zeros_like(triplet).squeeze(1)
                         # t_with_zeros[0] = t*(MAX_FEAT_SIZE+1)
-                        # new_t = t_with_zeros # the 3 last lines are equivalent to the next one ( Mean(x,x,x,x)=4*Mean(x,0,0,0)=x )
-                        new_t = t.repeat(MAX_FEAT_SIZE+1, 1)
+                        # new_t = t_with_zeros # the 3 last lines are equivalent to the next one ( Mean(x, x, x, x) = 4 * Mean(x, 0, 0, 0) = x )
+                        new_t = t.repeat(MAX_FEAT_SIZE + 1, 1)
                         res_vecs.append(new_t)
                     mat.index_put_((vecs_indices,), torch.cat(res_vecs, dim=0))
 
@@ -66,13 +70,14 @@ class Encoder(nn.Module):
                 new_embs.append(new_mat)
 
             lens = [e.shape[0] for e in new_embs]
-            if len(set(lens))>1: # if all updated sequences have same lengths, skip the following part.
+            if len(set(lens)) > 1:  # if all updated sequences have same lengths, skip the following part.
                 # Find the maximal new length, and pad the new batch with embeddings of <pad>
                 max_len = max(lens)
-                with torch.no_grad(): pad_token_embedding = self.embedding(torch.tensor([[pad_idx]], device=utils.device)).squeeze(0)
-                for i,new_mat in enumerate(new_embs):
+                with torch.no_grad():
+                    pad_token_embedding = self.embedding(torch.tensor([[pad_idx]], device=utils.device)).squeeze(0)
+                for i, new_mat in enumerate(new_embs):
                     if new_mat.shape[0] < max_len:
-                        new_embs[i] = torch.cat((new_mat, pad_token_embedding.repeat((max_len-new_mat.shape[0]),1) ))
+                        new_embs[i] = torch.cat((new_mat, pad_token_embedding.repeat((max_len - new_mat.shape[0]), 1)))
             embedding = torch.stack(new_embs, dim=1)
 
         # Important change: instead of applying Dropout on embedding here, we apply it on the hidden vectors after the FC layers.
