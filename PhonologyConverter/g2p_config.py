@@ -10,14 +10,15 @@ height = ['open', 'open-mid', 'mid', 'close-mid', 'close'] # 22-26
 backness = ['front', 'back', 'central'] # 27-29
 roundness = ['rounded', 'unrounded'] # 30-31
 length = ['long'] # only for vowels; no occurence means short vowel # 32
-punctuations = [' ', '-', "'", "̇", '.', '#', '?'] # 33-39, '#' is for predictions of non-existent feature bundles (see languages_setup.py)
+punctuations = [' ', '-', "'", "̇", '.', '*', '?'] # 33-39
+# '*' is for predictions of non-existent feature bundles (see languages_setup.py). Note: this line differs from the original g2p_config file!
 
 phon_features = place + manner + voice + height + backness + roundness + length + punctuations
 idx2feature = dict(enumerate(phon_features))
 feature2idx = {v:k for k, v in idx2feature.items()} # => {'labial':0,...,'nasal':6,...,'front':18,'back':19}
 
 # for writing the dictionaries, use the command: json.dump({"vowels":p2f_vowels_dict, "consonants":p2f_consonants_dict}, open("phonemes.json","w",encoding='utf8'), indent=2)
-phonemes = json.load(open(os.path.join("PhonologyConverter", "phonemes.json"), encoding='utf8'))
+phonemes = json.load(open(os.path.join(os.path.dirname(__file__), "phonemes.json"), encoding='utf8'))
 p2f_consonants = {k:tuple(v) for k,v in phonemes['consonants'].items()}
 p2f_vowels     = {k:tuple(v) for k,v in phonemes['vowels'].items()}
 p2f_vowels.update({ k+'ː': v+('long',) for k,v in p2f_vowels.items()}) # account for long vowels (and double their number)
