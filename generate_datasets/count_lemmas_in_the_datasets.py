@@ -3,6 +3,9 @@ from itertools import chain
 from os.path import join
 from typing import Callable, Collection, Dict, List, Tuple, Union
 
+import pandas as pd
+from pandas import DataFrame
+
 from PhonologyConverter.g2p_config import sqi_clean_sample, lav_clean_sample, \
     hun_clean_sample, tur_clean_sample, fin_clean_sample
 
@@ -105,6 +108,14 @@ def count_lemmas_in_reinflection_file(paradigms, reinflection_samples: Union[Lis
 
     return len(resulted_lemmas)
 
+def write_to_excel(excel_outputs_file, inflection_stats_list, reinflection_stats_list):
+    inflection_df = DataFrame(inflection_stats_list, columns=['Language', 'POS', '#Lemmas', '#Forms', '#Forms/#Lemmas']).fillna("")
+    reinflection_df = DataFrame(reinflection_stats_list, columns=['Language', 'POS', 'Split', 'FileType', '#Lemmas', '#Forms', '#Forms/#Lemmas']).fillna("")
+
+    with pd.ExcelWriter(excel_outputs_file) as writer:
+        inflection_df.to_excel(writer, sheet_name='Inflection')
+        reinflection_df.to_excel(writer, sheet_name='Reinflection')
+
 
 def main():
     file_types_sizes, splits = {'train': 8000, 'dev': 1000, 'test': 1000}, ['form', 'lemma']
@@ -113,6 +124,9 @@ def main():
     lang_pos_groups = [LanguagePOSGroup(group) for group in lang_pos_list]
     inflection_files_folder = join('..', '..', '.data', 'InflectionTables')
     reinflection_files_folder = join('..', '..', '.data', 'Reinflection', 'CleanedData')
+
+    excel_outputs_file = "Data-Stats.xlsx"
+    inflection_stats_list, reinflection_stats_list = [], []
 
     for lang_pos_group in lang_pos_groups:
         inflection_file_name = join(inflection_files_folder, f'{lang_pos_group.name}.txt')
@@ -124,7 +138,9 @@ def main():
         lemmas_lists_instances = [v for v in inflection_items.values()]
         total_lemmas_number = len(set(chain(*lemmas_lists_instances)))
         total_forms_number = sum([len(v) for v in lemmas_lists_instances])
-        print(f"Raw data: #lemmas = {total_lemmas_number}, #forms = {total_forms_number}. avg-table-size = {total_forms_number / total_lemmas_number:.1f}")
+        avg_paradigm_size = round(total_forms_number / total_lemmas_number, 1)
+        print(f"Raw data: #lemmas = {total_lemmas_number}, #forms = {total_forms_number}. avg-table-size = {avg_paradigm_size}")
+        inflection_stats_list.append([lang_pos_group.language, lang_pos_group.POS, total_lemmas_number, total_forms_number, avg_paradigm_size])
 
         for split in splits:
             print(f"{split} split:")
@@ -136,9 +152,13 @@ def main():
                 assert len(reinflection_samples) == file_types_sizes[file_type]
 
                 lemmas_number = count_lemmas_in_reinflection_file(inflection_items, reinflection_samples)
-                print(f"\tReinflection {file_type}: #lemmas = {lemmas_number}, #forms = {file_types_sizes[file_type] * 2}, avg-ratio = {(file_types_sizes[file_type] * 2) / lemmas_number:.2f}")
+                forms_number = file_types_sizes[file_type] * 2
+                forms_lemmas_ratio = round(forms_number / lemmas_number, 2)
+                print(f"\tReinflection {file_type}: #lemmas = {lemmas_number}, #forms = {forms_number}, avg-ratio = {forms_lemmas_ratio}")
+                reinflection_stats_list.append([lang_pos_group.language, lang_pos_group.POS, split, file_type, lemmas_number, forms_number, forms_lemmas_ratio])
             print()
 
+    write_to_excel(excel_outputs_file, inflection_stats_list, reinflection_stats_list)
 
 if __name__ == '__main__':
     main()
