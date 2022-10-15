@@ -1,16 +1,19 @@
 # The code is based on https://github.com/aladdinpersson/Machine-Learning-Collection/tree/master/ML/Pytorch/more_advanced/Seq2Seq_attention, with some adjustments ;)
+from copy import deepcopy
+
+import matplotlib.ticker as ticker
 import numpy as np
 import torch
-from torch_scatter import segment_mean_coo # super important! The link I used for installing it: https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html#quick-start
-from torchtext.legacy.data import Field
-from copy import deepcopy
+from editdistance import eval as edit_distance_eval
 from matplotlib import pyplot as plt
-import matplotlib.ticker as ticker
+from torch_scatter import \
+    segment_mean_coo  # super important! Link for installation: https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html#quick-start
+from torchtext.legacy.data import Field
 
 import hyper_params_config as hp
+from PhonologyConverter.languages_setup import MAX_FEAT_SIZE, langs_properties
+from phonology_decorator import PhonologyDecorator, phonology_decorator
 from run_setup import get_time_now_str, printF
-from analogies_phonology_preprocessing import combined_phonology_processor, GenericPhonologyProcessing
-from languages_setup import MAX_FEAT_SIZE, langs_properties
 
 device = torch.device(f"cuda:{hp.device_idx}" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(hp.SEED)
@@ -22,33 +25,38 @@ trg_tokenizer = lambda x: x.split(',')
 # Also, preprocessing of g-g reinflection (the standard variation) is supported, to maintain consistency.
 def phon_extended_src_preprocess(x: [str]) -> [str]:
     # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
-    x = langs_properties[hp.lang][3](','.join(x)).split(',') # clean the data
-    if hp.inp_phon_type=='graphemes':
-        return x # do nothing
+    x = langs_properties[hp.lang][3](','.join(x)).split(',')  # clean the data
+    if hp.inp_phon_type == 'graphemes':
+        return x  # do nothing
     else:
-        new_x, _ = combined_phonology_processor.line2phon_line_generic(','.join(x), '', convert_trg=False)
+        new_x, _ = phonology_decorator.morph_line2phon_line(','.join(x), '')
         return new_x
+
 
 def phon_extended_trg_preprocess(x: [str]) -> [str]:
     # Covnert the sample (which can be in Analogies format) to phonemes/features representation. Pad with NA tokens if in features mode.
     x = langs_properties[hp.lang][3](','.join(x)).split(',')
-    if hp.out_phon_type=='graphemes':
-        return x # do nothing
+    if hp.out_phon_type == 'graphemes':
+        return x  # do nothing
     else:
-        _, new_x = combined_phonology_processor.line2phon_line_generic('', ','.join(x), convert_src=False)
+        _, new_x = phonology_decorator.morph_line2phon_line('', ','.join(x))
         return new_x
 
+
 preprocess_methods_extended = {'src': phon_extended_src_preprocess, 'trg': phon_extended_trg_preprocess}
-srcField = Field(tokenize=src_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=preprocess_methods_extended['src'])
-trgField = Field(tokenize=trg_tokenizer, init_token="<sos>", eos_token="<eos>", preprocessing=preprocess_methods_extended['trg'])
+srcField = Field(tokenize=src_tokenizer, init_token="<sos>", eos_token="<eos>",
+                 preprocessing=preprocess_methods_extended['src'])
+trgField = Field(tokenize=trg_tokenizer, init_token="<sos>", eos_token="<eos>",
+                 preprocessing=preprocess_methods_extended['trg'])
 
 
 def get_abs_offsets(x: torch.Tensor, phon_delim, phon_max_len=MAX_FEAT_SIZE):
     # Given a 1D input tensor, finds the starting indices of all tuples that represent phonological bundles.
-    inds = torch.where(x==phon_delim)[0]
-    return torch.cat((torch.tensor([inds[0]-phon_max_len], device=device, dtype=inds.dtype), inds+1))
+    inds = torch.where(x == phon_delim)[0]
+    return torch.cat((torch.tensor([inds[0] - phon_max_len], device=device, dtype=inds.dtype), inds + 1))
 
-def postprocessBatch(src:torch.Tensor, offsets):
+
+def postprocessBatch(src: torch.Tensor, offsets):
     """
     Takes a tensor of embeddings, and averages the vectors that represent phonological features.
     :param src: a tensor of shape [seq_len, embed_size]. Represents embbedings of the sequence (Emb(x)) or the output of the Self-Attention layer (SelfAttn(Emb(x))).
@@ -56,14 +64,15 @@ def postprocessBatch(src:torch.Tensor, offsets):
     :return: The new tensor, after the averaging. It's shape is [new_seq_len, embed_size].
     """
     M, N = src.shape[0], len(offsets)
-    new_len = M-MAX_FEAT_SIZE*N
-    assert new_len>0
-    offsets -= MAX_FEAT_SIZE*torch.arange(N, device=device) #  = 3 = max_size-1 +1 (counting the phoneme index)
+    new_len = M - MAX_FEAT_SIZE * N
+    assert new_len > 0
+    offsets -= MAX_FEAT_SIZE * torch.arange(N, device=device)  # = 3 = max_size-1 +1 (counting the phoneme index)
     repeats = torch.ones(new_len, dtype=torch.long, device=device)
-    repeats[offsets] = MAX_FEAT_SIZE+1 # 4 = max_size +1
+    repeats[offsets] = MAX_FEAT_SIZE + 1  # 4 = max_size + 1
     final_offsets = torch.repeat_interleave(torch.arange(new_len, device=device), repeats)
     new_emb = segment_mean_coo(src, final_offsets)
     return new_emb
+
 
 def translate_sentence(model, sentence, german, english, device, max_length=50, return_attn=False):
     # Load german tokenizer
@@ -112,7 +121,7 @@ def translate_sentence(model, sentence, german, english, device, max_length=50, 
     else:
         return translated_sentence[1:]
 
-def bleu(data, model, german:Field, english:Field, device, converter:GenericPhonologyProcessing=None, output_file=''):
+def bleu(data, model, german:Field, english:Field, device, converter:PhonologyDecorator=None, output_file=''):
     sources, targets, outputs = [], [], []
     morph_sources, morph_targets, morph_outputs = [], [], [] # only necessary if phon_mode
 
@@ -129,18 +138,18 @@ def bleu(data, model, german:Field, english:Field, device, converter:GenericPhon
 
     # Count also Accuracy. Ignore <eos>, obviously.
 
-    accs, EDs = zip(*[(t == o, editDistance(t, o)) for t, o in zip(targets, outputs)])
+    accs, EDs = zip(*[(t == o, edit_distance_eval(t, o)) for t, o in zip(targets, outputs)])
     acc, res = np.mean(accs), np.mean(EDs)
 
     if converter is not None:
         # Calculate acc + ed on morphological conversions
         for s,t,o in zip(sources, targets, outputs):
-            src_morph, trg_morph, pred_morph = converter.phon_elements2morph_elements_generic(s, t, o)
+            src_morph, trg_morph, pred_morph = converter.phon_sample2morph_sample(s, t, o)
             # morph_sources.append(src_morph)
             morph_targets.append(trg_morph)
             morph_outputs.append(pred_morph)
 
-        morph_accs, morph_EDs = zip(*[(t==o, editDistance(t, o)) for t,o in zip(morph_targets, morph_outputs)])
+        morph_accs, morph_EDs = zip(*[(t==o, edit_distance_eval(t, o)) for t,o in zip(morph_targets, morph_outputs)])
         morph_acc, morph_res = np.mean(morph_accs), np.mean(morph_EDs)
         if output_file:
             write_predictions(output_file, morph_targets, morph_outputs, morph_accs, morph_EDs, sources=sources, phon_accs=accs, phon_eds=EDs, phon_targets=targets, phon_preds=outputs)
@@ -188,22 +197,6 @@ def load_checkpoint(checkpoint, model, optimizer, verbose=True):
     if verbose: printF("=> Loading checkpoint")
     model.load_state_dict(checkpoint["state_dict"])
     optimizer.load_state_dict(checkpoint["optimizer"])
-
-def editDistance(str1, str2):
-    """Simple Levenshtein implementation"""
-    table = np.zeros([len(str2) + 1, len(str1) + 1])
-    for i in range(1, len(str2) + 1):
-        table[i][0] = table[i - 1][0] + 1
-    for j in range(1, len(str1) + 1):
-        table[0][j] = table[0][j - 1] + 1
-    for i in range(1, len(str2) + 1):
-        for j in range(1, len(str1) + 1):
-            if str1[j - 1] == str2[i - 1]:
-                dg = 0
-            else:
-                dg = 1
-            table[i][j] = min(table[i - 1][j] + 1, table[i][j - 1] + 1, table[i - 1][j - 1] + dg)
-    return int(table[len(str2)][len(str1)])
 
 def showAttention(input_sentence, output_words, attentions, fig_name="Attention Weights.png"):
     # Set up figure with colorbar
