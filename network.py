@@ -32,20 +32,19 @@ class Encoder(nn.Module):
     def forward(self, x: torch.Tensor):
         # x: (seq_length, N) where N is batch size
 
-        embedding = self.embedding(x)
+        embedding = self.embedding(x) # (seq_len, N, E)
         if hp.PHON_UPGRADED:
             phon_delim, pad_idx = [utils.srcField.vocab.stoi[e] for e in ['$', '<pad>']]
             iter_embeds = embedding.permute(1, 0, 2)
             new_embs = []
 
             for i, seq in enumerate(x.t()):  # iterating over the batch samples
-                mat = iter_embeds[i]
-                abs_offsets = get_abs_offsets(seq, phon_delim,
-                                              phon_max_len=MAX_FEAT_SIZE + 1 if hp.PHON_USE_ATTENTION else MAX_FEAT_SIZE)
+                mat = iter_embeds[i] # (seq_len, E)
+                abs_offsets = get_abs_offsets(seq, phon_delim, phon_max_len = MAX_FEAT_SIZE + int(hp.PHON_USE_ATTENTION))
                 if hp.PHON_USE_ATTENTION:
                     res_vecs, vecs_indices = [], torch.cat([torch.arange(o, o + MAX_FEAT_SIZE + 1) for o in abs_offsets], dim=0)
-                    phon_vecs = mat[vecs_indices]  # get all the phonological vector-triplets and assign them to phon_vecs
-                    vec_triplets = torch.split(phon_vecs, MAX_FEAT_SIZE + 1, dim=0)  # splitting to a tuple of triplets
+                    phon_vecs = mat[vecs_indices]  # get all the phonological vector-triplets and assign them to phon_vecs, (N, E)
+                    vec_triplets = torch.split(phon_vecs, MAX_FEAT_SIZE + 1, dim=0)  # splitting to a tuple of triplets (
 
                     for triplet in vec_triplets:  # iterating over all the phonemes of the sample. Couldn't parallelize this part
                         triplet = triplet.unsqueeze(1)  # shape = [MAX_FEAT + 1, 1, embed_size]
@@ -64,8 +63,8 @@ class Encoder(nn.Module):
                         # new_t = t_with_zeros # the 3 last lines are equivalent to the next one ( Mean(x, x, x, x) = 4 * Mean(x, 0, 0, 0) = x )
                         new_t = t.repeat(MAX_FEAT_SIZE + 1, 1)
                         res_vecs.append(new_t)
-                    mat.index_put_((vecs_indices,), torch.cat(res_vecs, dim=0))
 
+                    mat.index_put_((vecs_indices,), torch.cat(res_vecs, dim=0))
                 new_mat = postprocessBatch(mat, abs_offsets)
                 new_embs.append(new_mat)
 
